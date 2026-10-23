@@ -1,0 +1,6 @@
+{
+  "name": "Smart Pest Detection and Treatment Recommendation System",
+  "description": "5th-Semester B.Tech AI & DS Design Project by Phani Nandan M S. Features CNN Feature Array, Hash Table O(1) lookup, Decision Tree severity classification, and Priority Queue max-heap treatment ranking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
