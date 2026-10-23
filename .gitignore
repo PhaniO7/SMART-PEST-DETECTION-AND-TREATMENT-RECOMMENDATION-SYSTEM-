@@ -1,8 +1,22 @@
+# ============================================================================
+# GIT IGNORE CONFIGURATION
+# Project: Smart Pest Detection and Treatment Recommendation System
+# Author : Phani Nandan M S
+# ============================================================================
+
+# Step 1: Ignore installed dependencies and build output folders
 node_modules/
 build/
 dist/
 coverage/
+
+# Step 2: Ignore operating system and editor temporary files
 .DS_Store
 *.log
+.aistudio/
+public/assets/aistudio/
+bun.lock
+
+# Step 3: Ignore private local environment variables (keep .env.example)
 .env*
 !.env.example
