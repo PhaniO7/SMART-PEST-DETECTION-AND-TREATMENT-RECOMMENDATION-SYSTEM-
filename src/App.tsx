@@ -6,10 +6,6 @@
  * ============================================================================
  *
  * APPLICATION ARCHITECTURE SUMMARY:
- * To keep the project clean, maintainable, and easy to explain during a
- * 5-minute viva presentation, the entire frontend UI is organized into 6
- * well-commented sections inside this file:
- *
  *   Section 1: Initial Sample Data (Pre-loaded Scans & Feedback Tickets)
  *   Section 2: Interactive Leaf SVG Illustration with YOLO Bounding Boxes
  *   Section 3: Login & Sign-Up Gate Screen (Shown first before opening website)
