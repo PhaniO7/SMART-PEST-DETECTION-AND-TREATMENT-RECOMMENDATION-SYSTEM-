@@ -10,7 +10,7 @@ Farmers often struggle to identify crop leaf pests early and choose the right, c
 
 ---
 
-## 2. Core 4-Stage Data Structures & Algorithms Pipeline (5-Minute Viva Summary)
+## 2. Core 4-Stage Data Structures & Algorithms Pipeline Summary
 
 All four data structures are implemented cleanly inside `src/dataAndAlgorithms.ts`:
 
@@ -28,7 +28,19 @@ All four data structures are implemented cleanly inside `src/dataAndAlgorithms.t
 
 ---
 
-## 3. Simplified Folder & File Structure
+## 3. User Complaint Tracking & Admin Response Workflow Summary
+
+1. **User Complaint Submission (`Tab 3: Feedback & Complaints`)**:
+   - Logged-in users can submit detection or treatment complaints. The system automatically records the complainant's **Name** (`userName`), **Account Email** (`userEmail`), and exact **Date & Time** (`createdAt` in `YYYY-MM-DD HH:MM:SS` format).
+2. **Admin Inspection & Direct Response Messaging (`Tab 5: Admin Portal`)**:
+   - Administrators can view who submitted each complaint (Name, Email, Date & Time, Crop, Category, Rating, and Description) and type a custom **Response Message** (`adminReply`).
+   - Sending a response records the Admin's name (`repliedBy`) and reply timestamp (`repliedAt`), updates the ticket status to `Resolved ✓`, and persists the record in `localStorage`.
+3. **User Account Complaint Tracker & Inbox**:
+   - When the user logs into their account, an account notification banner and the **My Complaint Status Tracker** display their submitted tickets, a **3-Step Live Progress Bar** (`1. Logged` $\rightarrow$ `2. Assigned to Admin` $\rightarrow$ `3. Response Received`), and the official response message sent by the Admin.
+
+---
+
+## 4. Simplified Folder & File Structure
 
 The codebase is intentionally organized into a flat, easy-to-read structure:
 

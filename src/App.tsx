@@ -6,12 +6,14 @@
  * ============================================================================
  *
  * APPLICATION ARCHITECTURE SUMMARY:
- *   Section 1: Initial Sample Data (Pre-loaded Scans & Feedback Tickets)
+ *   Section 1: Initial Sample Data (Pre-loaded Scans & User Complaint Tickets)
  *   Section 2: Interactive Leaf SVG Illustration with YOLO Bounding Boxes
- *   Section 3: Login & Sign-Up Gate Screen (Shown first before opening website)
- *   Section 4: MNC-Grade Dashboard & Leaf Scanner Tab
- *   Section 5: My Scans History, Feedback & Complaints, and 5-Min Algorithm Guide
- *   Section 6: Admin Portal (Team & System Administration)
+ *   Section 3: Login & Sign-Up Gate Screen (Role-Based User & Admin Access)
+ *   Section 4: Dashboard & Leaf Scanner Tab (Pre-Scan Guide + Post-Scan CV & Treatments)
+ *   Section 5: My Scans History, User Complaint Tracker (3-Step Progress & Admin Inbox),
+ *              and 4-Stage Algorithm Pipeline Summary
+ *   Section 6: Admin Portal (Complainant Identity View, Custom Response Messaging,
+ *              and 18-Pest Hash Table Database Inspector)
  * ============================================================================
  */
 
@@ -90,10 +92,15 @@ const INITIAL_HISTORY: ScanResult[] = [
   runCompleteDetectionPipeline({ cropInput: 'Apple', pestIdOverride: 'pest_16', affectedAreaPercent: 11, seed: 'init_4' })
 ];
 
+// ----------------------------------------------------------------------------
+// SECTION 1B: INITIAL USER COMPLAINT TICKETS
+// Summary: Pre-loaded complaints with complainant name, account email,
+// full submission date/time (YYYY-MM-DD HH:MM:SS), and sample admin replies.
+// ----------------------------------------------------------------------------
 const INITIAL_COMPLAINTS: UserComplaint[] = [
   {
     id: 'TKT-101',
-    userName: 'Kavitha Devi (Farmer)',
+    userName: 'Kavitha Devi',
     userEmail: 'kavitha.farm@agri.in',
     crop: 'Rice',
     category: 'Treatment Feedback',
@@ -101,20 +108,37 @@ const INITIAL_COMPLAINTS: UserComplaint[] = [
     subject: 'Water level during Chess 50 WG spray for Rice Planthopper',
     message: 'Recommended dosage of 120g/acre worked very well. Should we keep 2 cm water in the paddy field during application?',
     status: 'Resolved ✓',
-    createdAt: '2026-10-21 11:20',
-    adminReply: 'Yes, maintain 2–3 cm standing water for 48 hours and direct the nozzle toward the base of the rice tillers. — Phani Nandan M S'
+    createdAt: '2026-10-21 11:20:15',
+    adminReply: 'Yes, maintain 2–3 cm standing water for 48 hours and direct the nozzle toward the base of the rice tillers.',
+    repliedBy: 'PHANI NANDAN M S (Admin)',
+    repliedAt: '2026-10-21 14:05:30'
   },
   {
     id: 'TKT-102',
-    userName: 'Dr. Ramesh Kumar (Agronomist)',
+    userName: 'Dr. Ramesh Kumar',
     userEmail: 'ramesh.kumar@icar.gov.in',
     crop: 'Tomato',
     category: 'Detection Issue',
     rating: 4,
     subject: 'Lower shaded leaf with sooty mold flagged as Early Blight',
-    message: 'When scanning a shaded lower tomato leaf with dense whitefly honeydew, confidence dropped to 84%.',
+    message: 'When scanning a shaded lower tomato leaf with dense whitefly honeydew, confidence dropped to 84%. Please advise on optimal lighting.',
     status: 'Pending Admin Action',
-    createdAt: '2026-10-22 16:05'
+    createdAt: '2026-10-22 16:05:42'
+  },
+  {
+    id: 'TKT-103',
+    userName: 'Dr. Ramesh Kumar',
+    userEmail: 'ramesh.kumar@icar.gov.in',
+    crop: 'Potato',
+    category: 'Treatment Feedback',
+    rating: 5,
+    subject: 'Pre-harvest waiting period confirmation for Ridomil Gold',
+    message: 'Can we harvest potato tubers 14 days after applying Ridomil Gold 68 WG for Late Blight?',
+    status: 'Resolved ✓',
+    createdAt: '2026-10-20 09:40:10',
+    adminReply: 'Yes, the strict Pre-Harvest Interval (PHI) for Ridomil Gold 68 WG on Potato is 14 days. Ensure soil moisture is moderate before harvest.',
+    repliedBy: 'PHANI NANDAN M S (Admin)',
+    repliedAt: '2026-10-20 12:18:05'
   }
 ];
 
@@ -303,23 +327,60 @@ export default function App() {
   const [hasScannedImage, setHasScannedImage] = useState<boolean>(false);
   const [currentScan, setCurrentScan] = useState<ScanResult>(() => INITIAL_HISTORY[0]);
   const [scanHistory, setScanHistory] = useState<ScanResult[]>(INITIAL_HISTORY);
-  const [complaints, setComplaints] = useState<UserComplaint[]>(INITIAL_COMPLAINTS);
+  // --------------------------------------------------------------------------
+  // STEP 3B: PERSISTENT COMPLAINTS & ADMIN RESPONSE STATE (LOCALSTORAGE)
+  // Summary: Loads and saves all user complaints and admin response messages
+  // in localStorage ('smart_pest_complaints_v3') so that when an Admin sends a
+  // response and the user logs into their account, the response is persisted
+  // and immediately visible in their complaint tracker.
+  // --------------------------------------------------------------------------
+  const [complaints, setComplaints] = useState<UserComplaint[]>(() => {
+    try {
+      const saved = localStorage.getItem('smart_pest_complaints_v3');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // Fallback to initial complaints if localStorage is unavailable
+    }
+    return INITIAL_COMPLAINTS;
+  });
+
+  // Automatically sync updated complaints and admin replies to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('smart_pest_complaints_v3', JSON.stringify(complaints));
+    } catch {
+      // Ignore storage quota errors
+    }
+  }, [complaints]);
 
   // Filters for History & Admin Inspector
   const [historySearch, setHistorySearch] = useState('');
   const [dbSearch, setDbSearch] = useState('');
   const [dbCropFilter, setDbCropFilter] = useState<string>('all');
 
-  // Interactive Sandbox Slider for the 5-Min Algorithm Pipeline Tab
+  // Interactive Sandbox Slider for the Algorithm Pipeline Tab
   const [sandboxDamage, setSandboxDamage] = useState<number>(24);
 
-  // Feedback Form State
+  // --------------------------------------------------------------------------
+  // STEP 3C: USER COMPLAINT FORM, TRACKER FILTER & ADMIN REPLY DRAFTS
+  // Summary: Manages form inputs for submitting new complaints, the toggle
+  // between 'My Complaints' and 'All Tickets', and per-ticket reply drafts
+  // typed by the Admin inside the Admin Portal.
+  // --------------------------------------------------------------------------
   const [fbCrop, setFbCrop] = useState<CropType>('Tomato');
   const [fbCategory, setFbCategory] = useState<UserComplaint['category']>('Detection Issue');
   const [fbRating, setFbRating] = useState<number>(5);
   const [fbSubject, setFbSubject] = useState('');
   const [fbMessage, setFbMessage] = useState('');
   const [fbSuccessBanner, setFbSuccessBanner] = useState(false);
+  const [complaintFilter, setComplaintFilter] = useState<'my' | 'all'>('my');
+
+  // Stores custom response messages typed by the Admin for each ticket ID
+  const [adminReplyDrafts, setAdminReplyDrafts] = useState<Record<string, string>>({});
+  const [adminReplySentId, setAdminReplySentId] = useState<string | null>(null);
 
   // --------------------------------------------------------------------------
   // STEP 4: LOGIN & SIGN-UP HANDLERS
@@ -430,13 +491,33 @@ export default function App() {
   };
 
   // --------------------------------------------------------------------------
-  // STEP 6: FEEDBACK SUBMISSION & ADMIN ONE-CLICK RESOLUTION
+  // STEP 6: USER COMPLAINT SUBMISSION & ADMIN RESPONSE MESSAGING HANDLERS
+  // Summary:
+  //   1. formatCurrentDateTime() -> Formats current timestamp as YYYY-MM-DD HH:MM:SS.
+  //   2. handleFeedbackSubmit()  -> Creates a new complaint ticket with the logged-in
+  //                                 user's name, email, and timestamp, and switches
+  //                                 the tracker view to 'My Complaints'.
+  //   3. handleResolveComplaint()-> Allows an Admin to send a custom response message
+  //                                 to the user's ticket, recording the Admin's name
+  //                                 and reply timestamp, and marking it 'Resolved ✓'.
   // --------------------------------------------------------------------------
+  const formatCurrentDateTime = () => {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
+  };
+
+  // Submits a new complaint from the currently logged-in user
   const handleFeedbackSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!fbSubject.trim() || !fbMessage.trim()) return;
     const newTicket: UserComplaint = {
-      id: `TKT-${Math.floor(103 + complaints.length)}`,
+      id: `TKT-${Math.floor(101 + complaints.length)}`,
       userName: currentUser.name,
       userEmail: currentUser.email,
       crop: fbCrop,
@@ -445,27 +526,40 @@ export default function App() {
       subject: fbSubject.trim(),
       message: fbMessage.trim(),
       status: 'Pending Admin Action',
-      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+      createdAt: formatCurrentDateTime()
     };
     setComplaints((prev) => [newTicket, ...prev]);
     setFbSubject('');
     setFbMessage('');
+    setComplaintFilter('my');
     setFbSuccessBanner(true);
     setTimeout(() => setFbSuccessBanner(false), 3500);
   };
 
-  const handleResolveComplaint = (id: string) => {
+  // Sends an official Admin response message to a specific complaint ticket
+  const handleResolveComplaint = (id: string, customMessage?: string) => {
+    const replyTimestamp = formatCurrentDateTime();
     setComplaints((prev) =>
-      prev.map((c) =>
-        c.id === id
-          ? {
-              ...c,
-              status: 'Resolved ✓',
-              adminReply: 'Verified and resolved by Project Team (PHANI NANDAN M S, VEDHESHA PARTHIBAN, KHADGA LOHITH K, SHIVANI BALLANI). Model weights and treatment dosage table updated.'
-            }
-          : c
-      )
+      prev.map((c) => {
+        if (c.id !== id) return c;
+        const trimmedReply = (customMessage ?? adminReplyDrafts[id] ?? '').trim();
+        const finalReply =
+          trimmedReply ||
+          c.adminReply ||
+          `Hello ${c.userName}, your complaint regarding ${c.crop} (${c.subject}) has been reviewed and resolved by our team. Please follow the updated dosage and field guidelines.`;
+        return {
+          ...c,
+          status: 'Resolved ✓',
+          adminReply: finalReply,
+          repliedBy: `${currentUser.name} (Admin)`,
+          repliedAt: replyTimestamp
+        };
+      })
     );
+    setAdminReplySentId(id);
+    setTimeout(() => {
+      setAdminReplySentId((prev) => (prev === id ? null : prev));
+    }, 3000);
   };
 
   // CSV Download Helper for Scan History
@@ -656,10 +750,10 @@ export default function App() {
                 </button>
               </form>
 
-              {/* Quick One-Click Viva Demo Logins */}
+              {/* Quick One-Click Account Selection */}
               <div className="mt-6 pt-5 border-t border-slate-800">
                 <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2.5 text-center">
-                  Instant One-Click Demo Access (For Project Review)
+                  Quick Access Accounts
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <button
@@ -702,10 +796,22 @@ export default function App() {
   }
 
   // ==========================================================================
-  // MAIN LOGGED-IN MNC WEBSITE INTERFACE
+  // MAIN LOGGED-IN WEBSITE INTERFACE
+  // Summary: Computes complaint counts for both the Admin queue and the
+  // currently logged-in user's personal complaint tracker.
   // ==========================================================================
 
   const pendingComplaintsCount = complaints.filter((c) => c.status === 'Pending Admin Action').length;
+
+  // Filter complaints belonging to the currently logged-in user (matched by email or name)
+  const userComplaints = complaints.filter(
+    (c) =>
+      c.userEmail.toLowerCase() === currentUser.email.toLowerCase() ||
+      c.userName.toLowerCase() === currentUser.name.toLowerCase()
+  );
+
+  // Count how many of the logged-in user's complaints have received an Admin response message
+  const userResolvedWithReplyCount = userComplaints.filter((c) => Boolean(c.adminReply)).length;
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200">
@@ -771,8 +877,11 @@ export default function App() {
             {[
               { id: 'dashboard', label: '1. Dashboard & Scanner' },
               { id: 'history', label: `2. My Scans (${scanHistory.length})` },
-              { id: 'feedback', label: '3. Feedback & Complaints' },
-              { id: 'pipeline', label: '4. Algorithm Pipeline (5-Min Viva)' }
+              {
+                id: 'feedback',
+                label: `3. Feedback & Complaints (${userComplaints.length} Mine / ${complaints.length} Total)`
+              },
+              { id: 'pipeline', label: '4. Algorithm Pipeline' }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -797,7 +906,7 @@ export default function App() {
               }`}
             >
               <Shield className="w-3.5 h-3.5" />
-              <span>Admin Portal</span>
+              <span>Admin Portal ({pendingComplaintsCount} Pending)</span>
             </button>
           </nav>
         </div>
@@ -805,6 +914,40 @@ export default function App() {
 
       {/* MAIN CONTENT CONTAINER */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+        {/* User Account Complaint & Admin Response Notification Bar */}
+        {activeTab !== 'feedback' && activeTab !== 'admin' && userComplaints.length > 0 && (
+          <div className="rounded-2xl p-4 bg-emerald-500/10 border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 font-bold">
+                ✓
+              </div>
+              <div>
+                <div className="font-extrabold text-slate-900 dark:text-white">
+                  Account Complaint Tracker for {currentUser.name} ({currentUser.email})
+                </div>
+                <div className="text-slate-600 dark:text-slate-300 mt-0.5">
+                  You have <strong>{userComplaints.length}</strong> submitted complaint(s) —{' '}
+                  <strong className="text-emerald-600 dark:text-emerald-400">
+                    {userResolvedWithReplyCount} with an Admin Response Message
+                  </strong>{' '}
+                  and{' '}
+                  <strong className="text-amber-600 dark:text-amber-400">
+                    {userComplaints.length - userResolvedWithReplyCount} Pending Review
+                  </strong>.
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setComplaintFilter('my');
+                setActiveTab('feedback');
+              }}
+              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shrink-0 cursor-pointer transition-colors"
+            >
+              Track My Complaints & Admin Messages →
+            </button>
+          </div>
+        )}
         {/* ====================================================================
             SECTION 4: TAB 1 — MNC DASHBOARD & LEAF SCANNER
             ==================================================================== */}
@@ -1439,7 +1582,14 @@ export default function App() {
         )}
 
         {/* ====================================================================
-            SECTION 5B: TAB 3 — FEEDBACK & COMPLAINTS
+            SECTION 5B: TAB 3 — USER FEEDBACK, COMPLAINT TRACKER & ADMIN INBOX
+            Summary:
+              - Left Column: Form for logged-in users to submit a complaint with
+                automatic name, email, and timestamp capture.
+              - Right Column: Personal Complaint Status Tracker where the user
+                can filter their own complaints ('My Complaints'), view a 3-step
+                live progress bar, and read official response messages sent by
+                the Admin Team.
             ==================================================================== */}
         {activeTab === 'feedback' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -1540,68 +1690,221 @@ export default function App() {
               </form>
             </div>
 
-            {/* Right Column: Live Resolution Status Tracker */}
-            <div className="lg:col-span-7 space-y-3">
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
-                Live Complaints & Resolution Tracker ({complaints.length})
-              </h3>
-              {complaints.map((item) => (
-                <div
-                  key={item.id}
-                  className="rounded-2xl p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2 text-xs"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono font-bold text-slate-400">
-                      {item.id} · {item.crop} · {item.category}
-                    </span>
-                    <span
-                      className={`px-2.5 py-1 rounded-full font-bold ${
-                        item.status === 'Resolved ✓'
-                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                          : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+            {/* Right Column: User Account Complaint Tracker & Admin Response Inbox */}
+            <div className="lg:col-span-7 space-y-4">
+              {/* Account Summary & Filter Header */}
+              <div className="rounded-2xl p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                      My Complaint Status Tracker & Admin Responses
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Logged in as <strong>{currentUser.name}</strong> ({currentUser.email})
+                    </p>
+                  </div>
+
+                  {/* Filter Toggle: My Complaints vs All Complaints */}
+                  <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setComplaintFilter('my')}
+                      className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                        complaintFilter === 'my'
+                          ? 'bg-emerald-600 text-white shadow-sm'
+                          : 'text-slate-600 dark:text-slate-300'
                       }`}
                     >
-                      {item.status}
-                    </span>
+                      My Complaints ({userComplaints.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setComplaintFilter('all')}
+                      className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                        complaintFilter === 'all'
+                          ? 'bg-emerald-600 text-white shadow-sm'
+                          : 'text-slate-600 dark:text-slate-300'
+                      }`}
+                    >
+                      All Tickets ({complaints.length})
+                    </button>
                   </div>
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">{item.subject}</h4>
-                  <p className="text-slate-600 dark:text-slate-300">{item.message}</p>
-                  <div className="text-[11px] text-slate-400">
-                    Submitted by {item.userName} on {item.createdAt}
-                  </div>
-                  {item.adminReply && (
-                    <div className="mt-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300">
-                      <strong>Admin Reply:</strong> {item.adminReply}
-                    </div>
-                  )}
                 </div>
-              ))}
+
+                {/* Quick Status Counters for Current User */}
+                <div className="grid grid-cols-3 gap-3 text-center text-xs">
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
+                    <div className="text-lg font-extrabold text-slate-900 dark:text-white font-mono">
+                      {userComplaints.length}
+                    </div>
+                    <div className="text-[11px] text-slate-500">My Submitted Tickets</div>
+                  </div>
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                    <div className="text-lg font-extrabold text-amber-600 dark:text-amber-400 font-mono">
+                      {userComplaints.filter((c) => c.status === 'Pending Admin Action').length}
+                    </div>
+                    <div className="text-[11px] text-amber-700 dark:text-amber-300">Pending Admin Review</div>
+                  </div>
+                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                    <div className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">
+                      {userResolvedWithReplyCount}
+                    </div>
+                    <div className="text-[11px] text-emerald-700 dark:text-emerald-300">Admin Responses Received</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Ticket Cards List */}
+              {(complaintFilter === 'my' ? userComplaints : complaints).length === 0 ? (
+                <div className="rounded-2xl p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-2 text-xs text-slate-500">
+                  <div className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                    No complaints submitted under {currentUser.name} yet.
+                  </div>
+                  <p>
+                    Use the form on the left to submit a complaint or switch to "All Tickets ({complaints.length})" to view all records.
+                  </p>
+                </div>
+              ) : (
+                (complaintFilter === 'my' ? userComplaints : complaints).map((item) => {
+                  const isMine =
+                    item.userEmail.toLowerCase() === currentUser.email.toLowerCase() ||
+                    item.userName.toLowerCase() === currentUser.name.toLowerCase();
+
+                  return (
+                    <div
+                      key={item.id}
+                      className={`rounded-2xl p-5 bg-white dark:bg-slate-900 border space-y-3 text-xs shadow-sm ${
+                        isMine
+                          ? 'border-emerald-500/40 dark:border-emerald-500/40'
+                          : 'border-slate-200 dark:border-slate-800'
+                      }`}
+                    >
+                      {/* Top Header: Ticket ID, Crop, Category & Status */}
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-mono font-extrabold text-slate-700 dark:text-slate-200 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800">
+                            {item.id}
+                          </span>
+                          <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
+                            Crop: {item.crop}
+                          </span>
+                          <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold">
+                            {item.category}
+                          </span>
+                          {isMine && (
+                            <span className="px-2.5 py-1 rounded-lg bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 font-bold">
+                              My Ticket
+                            </span>
+                          )}
+                        </div>
+                        <span
+                          className={`px-3 py-1 rounded-full font-bold ${
+                            item.status === 'Resolved ✓'
+                              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                              : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                          }`}
+                        >
+                          {item.status}
+                        </span>
+                      </div>
+
+                      {/* Submitter Name, Email & Date-Time Metadata */}
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/70 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+                        <div>
+                          <span className="text-slate-400 block">Complainant Name:</span>
+                          <span className="font-bold text-slate-800 dark:text-slate-200">{item.userName}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block">Account Email:</span>
+                          <span className="font-mono text-slate-700 dark:text-slate-300">{item.userEmail}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block">Submitted Date & Time:</span>
+                          <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">
+                            {item.createdAt}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Subject & Message */}
+                      <div>
+                        <h4 className="text-sm font-extrabold text-slate-900 dark:text-white">{item.subject}</h4>
+                        <p className="text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">{item.message}</p>
+                      </div>
+
+                      {/* 3-Step Visual Complaint Tracking Progress Bar */}
+                      <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                          Live Tracking Status
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-[11px]">
+                          <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-bold">
+                            1. Logged ({item.createdAt.split(' ')[0]}) ✓
+                          </div>
+                          <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-bold">
+                            2. Assigned to Admin ✓
+                          </div>
+                          <div
+                            className={`p-2 rounded-lg border font-bold ${
+                              item.status === 'Resolved ✓'
+                                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-700 dark:text-emerald-300'
+                                : 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300'
+                            }`}
+                          >
+                            {item.status === 'Resolved ✓' ? '3. Response Received ✓' : '3. Awaiting Admin Reply'}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Official Admin Response Message Box */}
+                      {item.adminReply ? (
+                        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-1.5">
+                          <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+                            <span>✓ Official Admin Response to {item.userName}</span>
+                            <span className="font-mono">
+                              {item.repliedBy ? `${item.repliedBy} · ` : ''}
+                              {item.repliedAt || item.createdAt}
+                            </span>
+                          </div>
+                          <p className="text-slate-800 dark:text-slate-100 font-medium leading-relaxed">
+                            {item.adminReply}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-[11px] font-medium">
+                          Status: Your complaint is currently under review by the Admin Team. Once the Admin sends a response message, it will appear right here in your account.
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         )}
 
         {/* ====================================================================
-            SECTION 5C: TAB 4 — SIMPLIFIED "5-MINUTE VIVA GUIDE" ALGORITHM PIPELINE
-            Summary: Explains the 4 Data Structures in super simple language
-            with visual cards, interactive test slider, and short 6-line code snippets!
+            SECTION 5C: TAB 4 — 4-STAGE ALGORITHM PIPELINE SUMMARY
+            Summary: Technical overview of the 4 Data Structures & Algorithms
+            with live feature outputs, interactive threshold slider, and code snippets.
             ==================================================================== */}
         {activeTab === 'pipeline' && (
           <div className="space-y-6">
-            {/* Top Banner: How to Explain in 5 Minutes */}
+            {/* Top Banner: 4-Stage Pipeline Summary */}
             <div className="rounded-2xl p-6 bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white border border-emerald-500/30 shadow-lg">
               <div className="flex items-center gap-2 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-1">
                 <HelpCircle className="w-4 h-4" />
-                <span>5-Minute Viva & Project Presentation Guide</span>
+                <span>4-Stage Computer Vision & Data Structures Pipeline</span>
               </div>
               <h2 className="text-2xl font-extrabold">
-                How Our 4 Data Structures Work Together (Simple Step-by-Step)
+                End-to-End Detection & Treatment Ranking Pipeline Summary
               </h2>
               <p className="text-xs sm:text-sm text-slate-200 mt-1 max-w-3xl">
-                When a farmer uploads a leaf photo, the image flows through <strong>4 simple stages</strong>. You can explain this entire page to any professor or examiner in under 5 minutes!
+                When a crop leaf image is uploaded, it is processed sequentially through <strong>four core algorithmic stages</strong> to extract visual features, match the pest record in constant time, classify infestation severity, and rank treatments.
               </p>
             </div>
 
-            {/* 4 Simple Visual Step Cards */}
+            {/* 4 Visual Step Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* STAGE 1 CARD */}
               <div className="rounded-2xl p-6 bg-white dark:bg-slate-900 border-2 border-emerald-500/30 space-y-3">
@@ -1612,16 +1915,16 @@ export default function App() {
                   <span className="font-mono text-xs text-slate-400">Time Complexity: O(N)</span>
                 </div>
                 <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
-                  1. Feature Array (Stores Image Numbers)
+                  1. Feature Array (Stores Image Metrics)
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                  <strong>What to say in Viva:</strong> "Computers cannot understand a raw leaf photo directly. So Stage 1 scans the image and stores 8 simple numbers (Green color, Yellow spots, Edge sharpness) inside a 1D <strong>Feature Array</strong>."
+                  <strong>Summary:</strong> Scans the uploaded leaf image and extracts 8 normalized visual features (green chrominance, lesion density, chlorosis ratio, and edge contrast) into a 1D <strong>Feature Array</strong> for constant-time index access.
                 </p>
                 <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 font-mono text-xs">
                   Feature Array = [{currentScan.featureArray.join(', ')}]
                 </div>
                 <pre className="p-3 rounded-xl bg-slate-950 text-emerald-400 font-mono text-[11px] overflow-x-auto">
-{`// Simple Code: Store 8 leaf values in an Array
+{`// Stage 1: Store 8 normalized leaf metrics in a 1D Array
 const featureArray: number[] = [];
 for (let i = 0; i < 8; i++) {
   featureArray.push(extractLeafMetric(image, i));
@@ -1638,25 +1941,25 @@ for (let i = 0; i < 8; i++) {
                   <span className="font-mono text-xs text-slate-400">Time Complexity: O(1) Instant</span>
                 </div>
                 <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
-                  2. Hash Table Lookup (Finds Pest in 1 Step)
+                  2. Hash Table Lookup (Constant-Time Pest Retrieval)
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                  <strong>What to say in Viva:</strong> "Instead of searching all 18 pests one-by-one in a slow loop, we pass the Crop name into a <strong>Hash Function</strong>. It gives us the exact bucket number in <strong>O(1) constant time</strong>!"
+                  <strong>Summary:</strong> Instead of scanning all 18 pest records sequentially, the crop key is passed into a Polynomial Rolling <strong>Hash Function</strong> to compute the exact bucket index in <strong>O(1) constant time</strong>.
                 </p>
                 <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 font-mono text-xs">
                   Key: "{currentScan.crop}" → Hash Bucket #{currentScan.hashBucket} → {currentScan.detectedPest}
                 </div>
                 <pre className="p-3 rounded-xl bg-slate-950 text-cyan-400 font-mono text-[11px] overflow-x-auto">
-{`// Simple Code: Sum ASCII letters % 31 buckets
+{`// Stage 2: Compute bucket index via ASCII hash % 31
 function getBucketIndex(cropName: string) {
   let sum = 0;
   for (let ch of cropName) sum += ch.charCodeAt(0);
-  return sum % 31; // Instant O(1) Bucket!
+  return sum % 31; // O(1) Constant-Time Bucket Lookup
 }`}
                 </pre>
               </div>
 
-              {/* STAGE 3 CARD (With Interactive Slider!) */}
+              {/* STAGE 3 CARD (With Interactive Slider) */}
               <div className="rounded-2xl p-6 bg-white dark:bg-slate-900 border-2 border-amber-500/30 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="px-3 py-1 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold text-xs">
@@ -1665,16 +1968,16 @@ function getBucketIndex(cropName: string) {
                   <span className="font-mono text-xs text-slate-400">Time Complexity: O(depth)</span>
                 </div>
                 <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
-                  3. Decision Tree Classifier (Decides Severity)
+                  3. Decision Tree Classifier (Evaluates Infestation Severity)
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                  <strong>What to say in Viva:</strong> "A Decision Tree is just a tree of IF-ELSE questions based on what percentage of the leaf is damaged: under 15% is <strong>Low</strong>, 15% to 35% is <strong>Moderate</strong>, and above 35% is <strong>Severe</strong>."
+                  <strong>Summary:</strong> Evaluates the affected leaf area percentage using threshold rules: under 15% is classified as <strong>Low Severity</strong>, 15% to 35% as <strong>Moderate Severity</strong>, and above 35% as <strong>Severe Outbreak</strong>.
                 </p>
 
                 {/* Live Interactive Slider */}
                 <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2 text-xs">
                   <div className="flex justify-between font-bold">
-                    <span>Try Dragging Leaf Damage %:</span>
+                    <span>Interactive Leaf Damage % Threshold Simulator:</span>
                     <span className="font-mono text-amber-600 dark:text-amber-400">{sandboxDamage}% Damaged</span>
                   </div>
                   <input
@@ -1691,7 +1994,7 @@ function getBucketIndex(cropName: string) {
                 </div>
 
                 <pre className="p-3 rounded-xl bg-slate-950 text-amber-400 font-mono text-[11px] overflow-x-auto">
-{`// Simple Code: Decision Tree Rules
+{`// Stage 3: Decision Tree Threshold Classification
 if (damagePercent < 15) return 'Low Severity';
 else if (damagePercent <= 35) return 'Moderate Severity';
 else return 'Severe Outbreak';`}
@@ -1707,18 +2010,18 @@ else return 'Severe Outbreak';`}
                   <span className="font-mono text-xs text-slate-400">Time Complexity: O(K log K)</span>
                 </div>
                 <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
-                  4. Priority Queue Max-Heap (Ranks Best Medicine #1)
+                  4. Priority Queue Max-Heap (Ranks Optimal Treatments)
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                  <strong>What to say in Viva:</strong> "Each pest has 2–3 possible medicines. Our <strong>Priority Queue</strong> gives each medicine a score based on High Efficacy, Low Cost, and Low Waiting Days (PHI), putting the best medicine at the top!"
+                  <strong>Summary:</strong> Computes a composite priority score for each candidate treatment based on Efficacy %, Cost per Acre, and Pre-Harvest Interval (PHI), ordering the optimal recommendation at Rank #1 via a <strong>Max-Heap Priority Queue</strong>.
                 </p>
                 <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 font-mono text-xs">
                   Formula: Score = Efficacy% + BioBonus - (Cost / 100) - (PHI * 0.4)
                 </div>
                 <pre className="p-3 rounded-xl bg-slate-950 text-indigo-300 font-mono text-[11px] overflow-x-auto">
-{`// Simple Code: Priority Score & Max-Heap Sort
+{`// Stage 4: Priority Score & Max-Heap Ordering
 const score = item.efficacyPercent + bioBonus - (item.cost / 100);
-treatments.sort((a, b) => b.score - a.score); // Highest #1`}
+treatments.sort((a, b) => b.score - a.score); // Highest Rank #1`}
                 </pre>
               </div>
             </div>
@@ -1726,7 +2029,15 @@ treatments.sort((a, b) => b.score - a.score); // Highest #1`}
         )}
 
         {/* ====================================================================
-            SECTION 6: TAB 5 — ADMIN PORTAL
+            SECTION 6: TAB 5 — ADMIN PORTAL (COMPLAINTS & DATABASE MANAGEMENT)
+            Summary:
+              - Displays every user complaint with full Complainant Name,
+                User Account Email, and exact Complaint Date & Time.
+              - Provides a direct Response Message Composer on every ticket so
+                the Admin can send or update a custom reply that appears inside
+                the complainant's account when they log in.
+              - Includes a searchable Hash Table Database Inspector for all 18
+                pests across 15 crops.
             ==================================================================== */}
         {activeTab === 'admin' && (
           <div className="space-y-6">
@@ -1771,36 +2082,153 @@ treatments.sort((a, b) => b.score - a.score); // Highest #1`}
                   </div>
                 </div>
 
-                {/* One-Click Complaint Resolution Queue */}
-                <div className="rounded-2xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
-                  <h3 className="text-base font-extrabold">
-                    Farmer Complaints Queue (One-Click Resolution)
-                  </h3>
-                  {complaints.map((c) => (
-                    <div
-                      key={c.id}
-                      className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
-                    >
-                      <div>
-                        <div className="font-bold text-slate-900 dark:text-white">
-                          {c.id}: {c.subject} ({c.crop})
-                        </div>
-                        <div className="text-slate-500 mt-0.5">{c.message}</div>
-                      </div>
-                      {c.status === 'Pending Admin Action' ? (
-                        <button
-                          onClick={() => handleResolveComplaint(c.id)}
-                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shrink-0 cursor-pointer"
-                        >
-                          Resolve Now ✓
-                        </button>
-                      ) : (
-                        <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-500 font-bold shrink-0">
-                          Resolved ✓
-                        </span>
-                      )}
+                {/* Admin Complaint Inspection & Custom Response Messaging Queue */}
+                <div className="rounded-2xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                        User Complaints & Direct Response Management ({complaints.length})
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        View complainant name, email, date and time of submission, and send a response message directly to the user's account.
+                      </p>
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="space-y-4">
+                    {complaints.map((c) => (
+                      <div
+                        key={c.id}
+                        className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3 text-xs"
+                      >
+                        {/* Top Ticket Bar: ID, Crop, Category, Rating & Status */}
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="px-2.5 py-1 rounded-lg bg-slate-900 text-white dark:bg-slate-950 font-mono font-bold">
+                              {c.id}
+                            </span>
+                            <span className="px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold">
+                              Crop: {c.crop}
+                            </span>
+                            <span className="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold">
+                              {c.category}
+                            </span>
+                            <span className="px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold">
+                              Rating: {'★'.repeat(c.rating)} ({c.rating}/5)
+                            </span>
+                          </div>
+                          <span
+                            className={`px-3 py-1 rounded-full font-bold ${
+                              c.status === 'Resolved ✓'
+                                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                                : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                            }`}
+                          >
+                            {c.status}
+                          </span>
+                        </div>
+
+                        {/* Complainant Identity (Who made complaint, Name, Email, Date & Time) */}
+                        <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                              Complainant Name
+                            </span>
+                            <span className="font-extrabold text-slate-900 dark:text-white text-sm">
+                              {c.userName}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                              User Account Email
+                            </span>
+                            <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                              {c.userEmail}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                              Complaint Date & Time
+                            </span>
+                            <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
+                              {c.createdAt}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Subject & Full Complaint Description */}
+                        <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-1">
+                          <div className="font-extrabold text-slate-900 dark:text-white text-sm">
+                            Subject: {c.subject}
+                          </div>
+                          <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                            {c.message}
+                          </p>
+                        </div>
+
+                        {/* Existing Admin Response Preview (if already sent) */}
+                        {c.adminReply && (
+                          <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-1">
+                            <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+                              <span>Sent Response Message (Visible in {c.userName}'s Account):</span>
+                              <span className="font-mono">
+                                {c.repliedBy ? `${c.repliedBy} · ` : ''}
+                                {c.repliedAt || c.createdAt}
+                              </span>
+                            </div>
+                            <p className="text-slate-800 dark:text-slate-100 font-medium">
+                              {c.adminReply}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Admin Response Composer Box */}
+                        <div className="pt-2 border-t border-slate-200 dark:border-slate-700 space-y-2">
+                          <label className="block font-bold text-slate-700 dark:text-slate-200">
+                            {c.adminReply
+                              ? `Update Response Message to ${c.userName}:`
+                              : `Write Response Message to ${c.userName} (${c.userEmail}):`}
+                          </label>
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <input
+                              type="text"
+                              placeholder={`Type response message for ${c.userName} (will appear in their account)...`}
+                              value={adminReplyDrafts[c.id] ?? c.adminReply ?? ''}
+                              onChange={(e) =>
+                                setAdminReplyDrafts((prev) => ({
+                                  ...prev,
+                                  [c.id]: e.target.value
+                                }))
+                              }
+                              className="flex-1 px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs focus:outline-none focus:border-emerald-500"
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleResolveComplaint(
+                                  c.id,
+                                  adminReplyDrafts[c.id] ?? c.adminReply
+                                )
+                              }
+                              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shrink-0 cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                              <span>
+                                {c.status === 'Resolved ✓'
+                                  ? 'Send Updated Response ✓'
+                                  : 'Send Response & Resolve ✓'}
+                              </span>
+                            </button>
+                          </div>
+                          {adminReplySentId === c.id && (
+                            <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                              ✓ Response message delivered to {c.userName} ({c.userEmail})! They will see this message when logged into their account.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Searchable Hash Table Database Inspector (18 Pests & 15 Crops) */}

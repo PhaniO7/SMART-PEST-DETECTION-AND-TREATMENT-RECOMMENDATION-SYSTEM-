@@ -86,18 +86,26 @@ export interface ScanResult {
   presetId?: string;
 }
 
+/**
+ * USER COMPLAINT & ADMIN RESPONSE RECORD
+ * Summary: Stores a user-submitted complaint or feedback ticket along with
+ * the complainant's name, account email, submission date/time, tracking status,
+ * and the official response message sent by the Admin Team.
+ */
 export interface UserComplaint {
-  id: string;
-  userName: string;
-  userEmail: string;
-  crop: CropType;
+  id: string;             // Unique ticket identifier (e.g., 'TKT-101')
+  userName: string;       // Full name of the user who submitted the complaint
+  userEmail: string;      // Account email address of the complainant
+  crop: CropType;         // Affected crop selected by the user
   category: 'Detection Issue' | 'Treatment Feedback' | 'Feature Suggestion';
-  rating: number;
-  subject: string;
-  message: string;
-  status: 'Pending Admin Action' | 'Resolved ✓';
-  createdAt: string;
-  adminReply?: string;
+  rating: number;         // User star rating (1 to 5)
+  subject: string;        // Short title summarizing the complaint
+  message: string;        // Detailed description of the issue or query
+  status: 'Pending Admin Action' | 'Resolved ✓'; // Current resolution state
+  createdAt: string;      // Exact date & time when the complaint was logged (YYYY-MM-DD HH:MM:SS)
+  adminReply?: string;    // Response message sent by the Admin to the user's account
+  repliedBy?: string;     // Name/role of the Admin who sent the response
+  repliedAt?: string;     // Exact date & time when the Admin sent the response (YYYY-MM-DD HH:MM:SS)
 }
 
 // List of all 15 supported crops for dropdown menus
@@ -446,7 +454,7 @@ export function rankTreatmentsPriorityQueue(
         ? severity === 'Low' ? 18 : severity === 'Moderate' ? 6 : 0
         : 0;
 
-    // Simple, transparent scoring formula easy to explain in viva:
+    // Composite priority scoring formula:
     // Base = Efficacy% + OrganicBonus - (Cost / 100) - (PHI Days * 0.4)
     const rawScore =
       item.efficacyPercent +
