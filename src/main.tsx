@@ -3,6 +3,9 @@
  * REACT APPLICATION ENTRY POINT (main.tsx)
  * Project: Smart Pest Detection and Treatment Recommendation System
  * Author : Phani Nandan M S (5th-Semester B.Tech AI & DS)
+            Vedhesha Parthiban
+            Shivani Ballani
+            Khadga Lohith K 
  * ============================================================================
  *
  * FILE SUMMARY:
