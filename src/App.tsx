@@ -143,12 +143,21 @@ const LeafScannerViewport: React.FC<{
       />
 
       {scan.imageUrl ? (
-        <img
-          src={scan.imageUrl}
-          alt={scan.detectedPest}
-          referrerPolicy="no-referrer"
-          className="w-full h-full object-contain relative z-10"
-        />
+        <div className="relative w-full h-full flex items-center justify-center z-10">
+          <img
+            src={scan.imageUrl}
+            alt={scan.detectedPest}
+            referrerPolicy="no-referrer"
+            className="w-full h-full object-contain"
+          />
+          {showBoxes && (
+            <div className="absolute w-[52%] h-[54%] border-2 border-dashed border-emerald-400 bg-emerald-500/15 rounded-xl flex items-start justify-start p-2 shadow-lg pointer-events-none">
+              <span className="px-2 py-0.5 rounded bg-emerald-950/90 border border-emerald-500/50 text-emerald-300 font-mono text-[11px] font-bold">
+                {scan.detectedPest} ({scan.confidence}%)
+              </span>
+            </div>
+          )}
+        </div>
       ) : (
         <svg viewBox="0 0 320 300" className="w-full h-full max-h-[310px] relative z-10 drop-shadow-2xl">
           <defs>
@@ -186,7 +195,7 @@ const LeafScannerViewport: React.FC<{
           <circle cx="148" cy="190" r="14" fill="#facc15" opacity="0.35" />
           <circle cx="148" cy="190" r="9" fill={spotColor} />
 
-          {/* YOLO Bounding Box Overlay */}
+          {/* Computer Vision Bounding Box Overlay */}
           {showBoxes && (
             <g>
               <rect
@@ -224,7 +233,7 @@ const LeafScannerViewport: React.FC<{
       <div className="absolute bottom-3 left-3 right-3 z-30 flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-900/90 backdrop-blur-md border border-slate-700/80 text-xs text-slate-200">
         <span className="font-mono text-emerald-400 font-semibold flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-emerald-400" />
-          YOLOv9-Agri Vision Active
+          Computer Vision & ML Active
         </span>
         <span className="font-mono text-slate-300">
           Damage Area: <strong className="text-amber-400">{scan.affectedAreaPercent}%</strong> · Bucket #{scan.hashBucket}
@@ -291,6 +300,7 @@ export default function App() {
   const [activeSpecimen, setActiveSpecimen] = useState(SAMPLE_LEAF_SPECIMENS[0]);
   const [showBoxes, setShowBoxes] = useState(true);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [hasScannedImage, setHasScannedImage] = useState<boolean>(false);
   const [currentScan, setCurrentScan] = useState<ScanResult>(() => INITIAL_HISTORY[0]);
   const [scanHistory, setScanHistory] = useState<ScanResult[]>(INITIAL_HISTORY);
   const [complaints, setComplaints] = useState<UserComplaint[]>(INITIAL_COMPLAINTS);
@@ -377,6 +387,7 @@ export default function App() {
       seed: spec.id
     });
     setCurrentScan(result);
+    setHasScannedImage(true);
     setScanHistory((prev) => [result, ...prev]);
   };
 
@@ -394,6 +405,7 @@ export default function App() {
       seed: `${selectedCrop}_${Date.now()}`
     });
     setCurrentScan(result);
+    setHasScannedImage(true);
     setScanHistory((prev) => [result, ...prev]);
   };
 
@@ -411,6 +423,7 @@ export default function App() {
       });
       const withImage: ScanResult = { ...result, imageUrl: base64 };
       setCurrentScan(withImage);
+      setHasScannedImage(true);
       setScanHistory((prev) => [withImage, ...prev]);
     };
     reader.readAsDataURL(file);
@@ -697,27 +710,64 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200">
       {/* --------------------------------------------------------------------
-          TOP NAVIGATION BAR (MNC Glassmorphism Header)
+          TOP HEADER & NAVIGATION BAR (Clean Two-Row Non-Overlapping Layout)
           -------------------------------------------------------------------- */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border-b border-slate-200 dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
-          {/* Brand Logo & Exact Project Title */}
-          <div className="flex items-center gap-2.5 max-w-md lg:max-w-sm xl:max-w-md">
-            <div className="w-9 h-9 shrink-0 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
-              <Sprout className="w-5 h-5" />
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 space-y-3">
+          {/* Top Row: Full Project Title + Team Names on Left | User Controls on Right */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
+                <Sprout className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-xs sm:text-sm font-extrabold tracking-tight text-slate-900 dark:text-white block leading-snug uppercase">
+                  SMART PEST DETECTION AND TREATMENT RECOMMENDATION SYSTEM USING COMPUTER VISION AND MACHINE LEARNING
+                </span>
+                <span className="text-[10px] sm:text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block mt-0.5">
+                  Project By: PHANI NANDAN M S , VEDHESHA PARTHIBAN , KHADGA LOHITH K , SHIVANI BALLANI
+                </span>
+              </div>
             </div>
-            <div>
-              <span className="text-[11px] sm:text-xs font-extrabold tracking-tight text-slate-900 dark:text-white block leading-tight uppercase">
-                SMART PEST DETECTION AND TREATMENT RECOMMENDATION SYSTEM USING COMPUTER VISION AND MACHINE LEARNING
-              </span>
-              <span className="text-[9px] sm:text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block mt-0.5">
-                Project By: PHANI NANDAN M S , VEDHESHA PARTHIBAN , KHADGA LOHITH K , SHIVANI BALLANI
-              </span>
+
+            {/* Right User Badge, Theme Toggle & Sign Out */}
+            <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                aria-label="Toggle Dark / Light Mode"
+                className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                title="Toggle Dark / Light Mode"
+              >
+                {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
+              </button>
+
+              <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
+                <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white font-bold flex items-center justify-center text-[11px]">
+                  {currentUser.name.slice(0, 2).toUpperCase()}
+                </div>
+                <div className="leading-tight">
+                  <div className="font-bold text-slate-900 dark:text-white truncate max-w-[130px]">
+                    {currentUser.name}
+                  </div>
+                  <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                    {currentUser.role}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setIsLoggedIn(false)}
+                className="px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
+                title="Sign Out to Login Screen"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Sign Out</span>
+              </button>
             </div>
           </div>
 
-          {/* Center Multi-Tab Navigation */}
-          <nav className="hidden lg:flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200/70 dark:border-slate-700/70">
+          {/* Bottom Row: Multi-Tab Navigation Bar */}
+          <nav className="flex items-center gap-1.5 overflow-x-auto p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200/70 dark:border-slate-700/70">
             {[
               { id: 'dashboard', label: '1. Dashboard & Scanner' },
               { id: 'history', label: `2. My Scans (${scanHistory.length})` },
@@ -727,7 +777,7 @@ export default function App() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'bg-emerald-600 text-white shadow-sm'
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
@@ -740,7 +790,7 @@ export default function App() {
             {/* Admin Portal Tab */}
             <button
               onClick={() => setActiveTab('admin')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 activeTab === 'admin'
                   ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-sm'
                   : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10'
@@ -750,62 +800,6 @@ export default function App() {
               <span>Admin Portal</span>
             </button>
           </nav>
-
-          {/* Right User Badge, Theme Toggle & Sign Out */}
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => setDarkMode(!darkMode)}
-              aria-label="Toggle Dark / Light Mode"
-              className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-              title="Toggle Dark / Light Mode"
-            >
-              {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
-            </button>
-
-            <div className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
-              <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white font-bold flex items-center justify-center text-[11px]">
-                {currentUser.name.slice(0, 2).toUpperCase()}
-              </div>
-              <div className="leading-tight">
-                <div className="font-bold text-slate-900 dark:text-white truncate max-w-[115px]">
-                  {currentUser.name}
-                </div>
-                <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
-                  {currentUser.role}
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setIsLoggedIn(false)}
-              className="px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
-              title="Sign Out to Login Screen"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Sign Out</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Navigation Strip */}
-        <div className="md:hidden flex items-center gap-1 overflow-x-auto px-4 py-2 bg-slate-100/80 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
-          {[
-            { id: 'dashboard', label: 'Scanner' },
-            { id: 'history', label: 'My Scans' },
-            { id: 'feedback', label: 'Feedback' },
-            { id: 'pipeline', label: '5-Min DSA Guide' },
-            { id: 'admin', label: 'Admin' }
-          ].map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id as any)}
-              className={`px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${
-                activeTab === t.id ? 'bg-emerald-600 text-white' : 'text-slate-600 dark:text-slate-400'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
         </div>
       </header>
 
@@ -937,225 +931,404 @@ export default function App() {
               </div>
             </div>
 
-            {/* 4-Stage Execution Telemetry Bar */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-500/30 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-bold uppercase text-emerald-600 dark:text-emerald-400 block">
-                    Stage 1: Feature Array
-                  </span>
-                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    8-Value Color/Spot Vector
-                  </span>
-                </div>
-                <span className="font-mono text-xs font-bold px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                  {currentScan.telemetryMs.featureArray} ms
-                </span>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-cyan-500/30 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-bold uppercase text-cyan-600 dark:text-cyan-400 block">
-                    Stage 2: Hash Table O(1)
-                  </span>
-                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Bucket #{currentScan.hashBucket} Instant Match
-                  </span>
-                </div>
-                <span className="font-mono text-xs font-bold px-2 py-1 rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
-                  {currentScan.telemetryMs.hashTable} ms
-                </span>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-amber-500/30 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-bold uppercase text-amber-600 dark:text-amber-400 block">
-                    Stage 3: Decision Tree
-                  </span>
-                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Severity: {currentScan.severity}
-                  </span>
-                </div>
-                <span className="font-mono text-xs font-bold px-2 py-1 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                  {currentScan.telemetryMs.decisionTree} ms
-                </span>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-indigo-500/30 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-bold uppercase text-indigo-600 dark:text-indigo-400 block">
-                    Stage 4: Priority Queue
-                  </span>
-                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Max-Heap Ranked ({currentScan.rankedTreatments.length})
-                  </span>
-                </div>
-                <span className="font-mono text-xs font-bold px-2 py-1 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-                  {currentScan.telemetryMs.priorityQueue} ms
-                </span>
-              </div>
-            </div>
-
-            {/* Split Results View: Left YOLO Viewport | Right Priority Queue Medicines */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              {/* Left 6 Columns: Annotated Leaf Canvas + Diagnostic Summary */}
-              <div className="lg:col-span-6 space-y-4">
-                <div className="rounded-2xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                        Annotated YOLO Bounding-Box Detection
-                      </h3>
-                      <p className="text-xs text-slate-500">
-                        Crop: <strong>{currentScan.crop}</strong> ({currentScan.detectionMode})
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setShowBoxes(!showBoxes)}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer ${
-                          showBoxes
-                            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
-                        }`}
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>YOLO Box</span>
-                      </button>
-                      <button
-                        onClick={() => setShowHeatmap(!showHeatmap)}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer ${
-                          showHeatmap
-                            ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
-                        }`}
-                      >
-                        <Layers className="w-3.5 h-3.5" />
-                        <span>Heatmap</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <LeafScannerViewport
-                    scan={currentScan}
-                    specimenColor={activeSpecimen.leafColor}
-                    spotColor={activeSpecimen.spotColor}
-                    showBoxes={showBoxes}
-                    showHeatmap={showHeatmap}
-                  />
-
-                  {/* Decision Tree Output Card */}
-                  <div className="mt-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 space-y-2 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-900 dark:text-white text-sm">
-                        Detected: {currentScan.detectedPest}
-                      </span>
-                      <span
-                        className={`px-2.5 py-0.5 rounded-full font-bold text-xs ${
-                          currentScan.severity === 'Severe'
-                            ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
-                            : currentScan.severity === 'Moderate'
-                            ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
-                            : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                        }`}
-                      >
-                        {currentScan.severity} Severity
-                      </span>
-                    </div>
-                    <div className="text-slate-500 italic">{currentScan.scientificName}</div>
-                    <div className="p-2.5 rounded-lg bg-slate-900 text-emerald-300 font-mono text-[11px]">
-                      Decision Tree Rule: {currentScan.decisionRuleUsed}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right 6 Columns: Priority Queue Ranked Treatment Cards */}
-              <div className="lg:col-span-6 space-y-3">
-                <div className="flex items-center justify-between">
+            {/* ================================================================
+                CONDITIONAL WORKSPACE:
+                - Before an image is uploaded (!hasScannedImage): Show useful
+                  Interactive Leaf Upload Dropzone, 3-Step Workflow Guide, and
+                  15-Crop & 18-Pest Agricultural Reference Directory.
+                - Once an image is uploaded / scanned (hasScannedImage): Show
+                  the 4-Stage Telemetry Bar, Computer Vision Detection Box, and
+                  Priority Queue Ranked Treatments.
+                ================================================================ */}
+            {!hasScannedImage ? (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                {/* Left 6 Columns: Interactive Leaf Upload Dropzone & 3-Step Workflow Guide */}
+                <div className="lg:col-span-6 rounded-2xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-5">
                   <div>
-                    <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
-                      Priority Queue Ranked Treatments (Max-Heap)
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold mb-2">
+                      <UploadCloud className="w-3.5 h-3.5" />
+                      <span>Step 1 · Computer Vision Leaf Image Input</span>
+                    </div>
+                    <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">
+                      Upload a Crop Leaf Image to Start Detection
                     </h3>
-                    <p className="text-xs text-slate-500">
-                      Automatically sorted by Efficacy %, Cost per Acre, and Pre-Harvest Interval (PHI).
+                    <p className="text-xs text-slate-500 mt-1">
+                      Upload a clear photo of an affected crop leaf below (or select one of the Quick-Test Sample Leaves above) to run the Computer Vision & Machine Learning pipeline.
                     </p>
                   </div>
+
+                  {/* Large Interactive Drag & Drop Upload Box */}
+                  <label className="group flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed border-emerald-500/50 hover:border-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 transition-all cursor-pointer text-center space-y-3">
+                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 group-hover:bg-emerald-500/25 flex items-center justify-center text-emerald-600 dark:text-emerald-400 transition-colors">
+                      <UploadCloud className="w-7 h-7" />
+                    </div>
+                    <div>
+                      <span className="text-sm font-extrabold text-slate-900 dark:text-white block">
+                        Click to Upload Leaf Image (JPG, PNG, WEBP)
+                      </span>
+                      <span className="text-xs text-slate-500 block mt-0.5">
+                        Supports all 15 agricultural crops · Automatic CNN Feature Extraction
+                      </span>
+                    </div>
+                    <span className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-sm">
+                      Browse Leaf Photo from Device
+                    </span>
+                    <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+                  </label>
+
+                  {/* How the System Works (3 Simple Steps) */}
+                  <div className="space-y-2.5 pt-2">
+                    <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
+                      How Detection & Treatment Ranking Works:
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/70 dark:border-slate-700/70">
+                        <div className="font-extrabold text-emerald-600 dark:text-emerald-400 mb-0.5">
+                          1. CNN Feature Array
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Extracts 8 leaf color, lesion spot, and edge metrics from your uploaded photo.
+                        </p>
+                      </div>
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/70 dark:border-slate-700/70">
+                        <div className="font-extrabold text-cyan-600 dark:text-cyan-400 mb-0.5">
+                          2. Hash & Decision Tree
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Matches the pest in O(1) time and grades leaf damage as Low, Moderate, or Severe.
+                        </p>
+                      </div>
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/70 dark:border-slate-700/70">
+                        <div className="font-extrabold text-indigo-600 dark:text-indigo-400 mb-0.5">
+                          3. Priority Queue
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Ranks treatments by Efficacy %, Cost per Acre (₹), and safe waiting days (PHI).
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                {currentScan.rankedTreatments.map((trt, index) => (
-                  <div
-                    key={trt.id}
-                    className={`rounded-2xl p-5 border transition-all ${
-                      index === 0
-                        ? 'bg-gradient-to-br from-white to-emerald-50/60 dark:from-slate-900 dark:to-emerald-950/30 border-emerald-500/50 shadow-md'
-                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className="flex items-center gap-2.5">
-                        <span
-                          className={`w-7 h-7 rounded-lg font-mono text-xs font-extrabold flex items-center justify-center ${
-                            index === 0
-                              ? 'bg-emerald-600 text-white shadow-sm'
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                          }`}
-                        >
-                          #{index + 1}
-                        </span>
-                        <div>
+                {/* Right 6 Columns: Useful 15-Crop & 18-Pest Quick Reference Guide */}
+                <div className="lg:col-span-6 rounded-2xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 text-xs font-bold mb-2">
+                        <Database className="w-3.5 h-3.5" />
+                        <span>Supported Crops & Pest Reference Guide</span>
+                      </div>
+                      <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">
+                        15 Major Crops & Key Symptoms Directory
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Quick agricultural reference of supported crops, target pests, and top treatments. Click any row to run a sample scan immediately.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Scrollable Crop & Pest Reference List */}
+                  <div className="max-h-[290px] overflow-y-auto pr-1 space-y-2">
+                    {PEST_DATABASE.slice(0, 8).map((pest) => (
+                      <div
+                        key={pest.id}
+                        className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between gap-3 text-xs"
+                      >
+                        <div className="space-y-0.5">
                           <div className="flex items-center gap-2">
-                            <h4 className="text-sm font-extrabold text-slate-900 dark:text-white">
-                              {trt.productName}
-                            </h4>
-                            {index === 0 && (
-                              <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 text-[10px] font-bold">
-                                ★ Top Priority Match
-                              </span>
-                            )}
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold text-[10px]">
+                              {pest.affectedCrops.join(', ')}
+                            </span>
+                            <span className="font-extrabold text-slate-900 dark:text-white">
+                              {pest.commonName}
+                            </span>
                           </div>
-                          <div className="text-xs text-slate-500">
-                            Active Ingredient: <strong className="text-slate-700 dark:text-slate-300">{trt.activeIngredient}</strong>
-                          </div>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">
+                            Symptoms: {pest.symptoms}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const cropName = pest.affectedCrops[0];
+                            setSelectedCrop(cropName);
+                            const result = runCompleteDetectionPipeline({
+                              cropInput: cropName,
+                              pestIdOverride: pest.id,
+                              affectedAreaPercent: 28,
+                              userEmail: currentUser.email,
+                              seed: pest.id
+                            });
+                            setCurrentScan(result);
+                            setHasScannedImage(true);
+                            setScanHistory((prev) => [result, ...prev]);
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-emerald-600/15 hover:bg-emerald-600 text-emerald-600 dark:text-emerald-300 hover:text-white font-bold text-[11px] shrink-0 transition-colors cursor-pointer"
+                        >
+                          Simulate Scan →
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Field Photography Tip Banner */}
+                  <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs flex items-center justify-between gap-3">
+                    <div>
+                      <span className="font-extrabold text-amber-600 dark:text-amber-400 block">
+                        ✦ Field Leaf Photography Tip:
+                      </span>
+                      <span className="text-[11px] text-slate-600 dark:text-slate-300">
+                        Capture the leaf in natural daylight against a plain background so necrotic spots and leaf margins are clearly visible.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Top Action Bar to Reset / Upload Another Image */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30">
+                  <div className="flex items-center gap-2.5 text-xs">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                    <div>
+                      <span className="font-extrabold text-slate-900 dark:text-white block">
+                        Computer Vision & Machine Learning Analysis Complete ({currentScan.telemetryMs.total} ms)
+                      </span>
+                      <span className="text-slate-600 dark:text-slate-300">
+                        Showing bounding-box lesion detection, Decision Tree severity, and Priority Queue treatments for <strong>{currentScan.crop}</strong>.
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setHasScannedImage(false)}
+                    className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold shrink-0 cursor-pointer"
+                  >
+                    ← Upload Another Leaf / Back to Crop Guide
+                  </button>
+                </div>
+
+                {/* 4-Stage Execution Telemetry Bar */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-500/30 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-emerald-600 dark:text-emerald-400 block">
+                        Stage 1: Feature Array
+                      </span>
+                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        8-Value Color/Spot Vector
+                      </span>
+                    </div>
+                    <span className="font-mono text-xs font-bold px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                      {currentScan.telemetryMs.featureArray} ms
+                    </span>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-cyan-500/30 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-cyan-600 dark:text-cyan-400 block">
+                        Stage 2: Hash Table O(1)
+                      </span>
+                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        Bucket #{currentScan.hashBucket} Instant Match
+                      </span>
+                    </div>
+                    <span className="font-mono text-xs font-bold px-2 py-1 rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
+                      {currentScan.telemetryMs.hashTable} ms
+                    </span>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-amber-500/30 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-amber-600 dark:text-amber-400 block">
+                        Stage 3: Decision Tree
+                      </span>
+                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        Severity: {currentScan.severity}
+                      </span>
+                    </div>
+                    <span className="font-mono text-xs font-bold px-2 py-1 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                      {currentScan.telemetryMs.decisionTree} ms
+                    </span>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-indigo-500/30 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-indigo-600 dark:text-indigo-400 block">
+                        Stage 4: Priority Queue
+                      </span>
+                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        Max-Heap Ranked ({currentScan.rankedTreatments.length})
+                      </span>
+                    </div>
+                    <span className="font-mono text-xs font-bold px-2 py-1 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                      {currentScan.telemetryMs.priorityQueue} ms
+                    </span>
+                  </div>
+                </div>
+
+                {/* Split Results View: Left Computer Vision Viewport | Right Priority Queue Medicines */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                  {/* Left 6 Columns: Annotated Leaf Canvas + Diagnostic Summary */}
+                  <div className="lg:col-span-6 space-y-4">
+                    <div className="rounded-2xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                            Computer Vision & Machine Learning Leaf Detection
+                          </h3>
+                          <p className="text-xs text-slate-500">
+                            Crop: <strong>{currentScan.crop}</strong> ({currentScan.detectionMode})
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setShowBoxes(!showBoxes)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer ${
+                              showBoxes
+                                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                            }`}
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Detection Box</span>
+                          </button>
+                          <button
+                            onClick={() => setShowHeatmap(!showHeatmap)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer ${
+                              showHeatmap
+                                ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                            }`}
+                          >
+                            <Layers className="w-3.5 h-3.5" />
+                            <span>Heatmap</span>
+                          </button>
                         </div>
                       </div>
 
-                      <div className="text-right">
-                        <span className="text-[10px] font-bold uppercase text-slate-400 block">Heap Score</span>
-                        <span className="text-sm font-mono font-extrabold text-emerald-600 dark:text-emerald-400">
-                          {trt.priorityScore} / 100
-                        </span>
-                      </div>
-                    </div>
+                      <LeafScannerViewport
+                        scan={currentScan}
+                        specimenColor={activeSpecimen.leafColor}
+                        spotColor={activeSpecimen.spotColor}
+                        showBoxes={showBoxes}
+                        showHeatmap={showHeatmap}
+                      />
 
-                    {/* Dosage, Cost & PHI Pills */}
-                    <div className="grid grid-cols-3 gap-2.5 text-xs">
-                      <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/60 dark:border-slate-700/60">
-                        <span className="text-[10px] text-slate-400 block">Dosage / Acre</span>
-                        <span className="font-mono font-bold text-slate-900 dark:text-white">{trt.dosagePerAcre}</span>
+                      {/* Decision Tree Output Card */}
+                      <div className="mt-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 space-y-2 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-slate-900 dark:text-white text-sm">
+                            Detected: {currentScan.detectedPest}
+                          </span>
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full font-bold text-xs ${
+                              currentScan.severity === 'Severe'
+                                ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                                : currentScan.severity === 'Moderate'
+                                ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                                : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                            }`}
+                          >
+                            {currentScan.severity} Severity
+                          </span>
+                        </div>
+                        <div className="text-slate-500 italic">{currentScan.scientificName}</div>
+                        <div className="p-2.5 rounded-lg bg-slate-900 text-emerald-300 font-mono text-[11px]">
+                          Decision Tree Rule: {currentScan.decisionRuleUsed}
+                        </div>
                       </div>
-                      <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/60 dark:border-slate-700/60">
-                        <span className="text-[10px] text-slate-400 block">Cost / Acre</span>
-                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">Rs. {trt.costPerAcreINR}</span>
-                      </div>
-                      <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/60 dark:border-slate-700/60">
-                        <span className="text-[10px] text-slate-400 block">Waiting PHI</span>
-                        <span className="font-mono font-bold text-amber-600 dark:text-amber-400">{trt.phiDays} Days</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                      <span className="font-semibold text-slate-600 dark:text-slate-400">
-                        Category: <strong className="text-slate-800 dark:text-slate-200">{trt.category}</strong>
-                      </span>
-                      <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                        Field Efficacy: {trt.efficacyPercent}%
-                      </span>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
+
+                  {/* Right 6 Columns: Priority Queue Ranked Treatment Cards */}
+                  <div className="lg:col-span-6 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                          Priority Queue Ranked Treatments (Max-Heap)
+                        </h3>
+                        <p className="text-xs text-slate-500">
+                          Automatically sorted by Efficacy %, Cost per Acre, and Pre-Harvest Interval (PHI).
+                        </p>
+                      </div>
+                    </div>
+
+                    {currentScan.rankedTreatments.map((trt, index) => (
+                      <div
+                        key={trt.id}
+                        className={`rounded-2xl p-5 border transition-all ${
+                          index === 0
+                            ? 'bg-gradient-to-br from-white to-emerald-50/60 dark:from-slate-900 dark:to-emerald-950/30 border-emerald-500/50 shadow-md'
+                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div className="flex items-center gap-2.5">
+                            <span
+                              className={`w-7 h-7 rounded-lg font-mono text-xs font-extrabold flex items-center justify-center ${
+                                index === 0
+                                  ? 'bg-emerald-600 text-white shadow-sm'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                              }`}
+                            >
+                              #{index + 1}
+                            </span>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-sm font-extrabold text-slate-900 dark:text-white">
+                                  {trt.productName}
+                                </h4>
+                                {index === 0 && (
+                                  <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 text-[10px] font-bold">
+                                    ★ Top Priority Match
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-xs text-slate-500">
+                                Active Ingredient: <strong className="text-slate-700 dark:text-slate-300">{trt.activeIngredient}</strong>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="text-right">
+                            <span className="text-[10px] font-bold uppercase text-slate-400 block">Heap Score</span>
+                            <span className="text-sm font-mono font-extrabold text-emerald-600 dark:text-emerald-400">
+                              {trt.priorityScore} / 100
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Dosage, Cost & PHI Pills */}
+                        <div className="grid grid-cols-3 gap-2.5 text-xs">
+                          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/60 dark:border-slate-700/60">
+                            <span className="text-[10px] text-slate-400 block">Dosage / Acre</span>
+                            <span className="font-mono font-bold text-slate-900 dark:text-white">{trt.dosagePerAcre}</span>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/60 dark:border-slate-700/60">
+                            <span className="text-[10px] text-slate-400 block">Cost / Acre</span>
+                            <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">Rs. {trt.costPerAcreINR}</span>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/60 dark:border-slate-700/60">
+                            <span className="text-[10px] text-slate-400 block">Waiting PHI</span>
+                            <span className="font-mono font-bold text-amber-600 dark:text-amber-400">{trt.phiDays} Days</span>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                          <span className="font-semibold text-slate-600 dark:text-slate-400">
+                            Category: <strong className="text-slate-800 dark:text-slate-200">{trt.category}</strong>
+                          </span>
+                          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                            Field Efficacy: {trt.efficacyPercent}%
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
 
