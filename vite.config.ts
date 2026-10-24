@@ -2,7 +2,10 @@
  * ============================================================================
  * VITE CONFIGURATION
  * Project: Smart Pest Detection & Treatment System
- * Author: Phani Nandan M S (5th-Sem B.Tech AI & DS)
+ * Author: Phani Nandan M S
+           Vedhesha Parthiban
+           Shivani Ballani
+           Khadga Lohith K
  * ============================================================================
  * 
  * Purpose:
