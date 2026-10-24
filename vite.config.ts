@@ -1,15 +1,18 @@
 /**
  * ============================================================================
- * VITE BUNDLER & DEVELOPMENT SERVER CONFIGURATION
- * Project: Smart Pest Detection and Treatment Recommendation System
- * Author : Phani Nandan M S (5th-Semester B.Tech AI & DS)
+ * VITE CONFIGURATION
+ * Project: Smart Pest Detection & Treatment System
+ * Author: Phani Nandan M S (5th-Sem B.Tech AI & DS)
  * ============================================================================
- *
- * FILE SUMMARY:
- * Configures Vite to bundle our React + TypeScript + Tailwind CSS frontend.
- * - Uses relative asset paths (base: './') so the built website works on any
- *   static host (Vercel, GitHub Pages, Netlify, or local preview).
- * - Configures the '@' path alias for clean imports across the project.
+ * 
+ * Purpose:
+ * This file configures how Vite builds and runs our React frontend.
+ * 
+ * Key Settings:
+ * - base ('./') : Uses relative paths so the app can easily be hosted anywhere 
+ *                 (Vercel, GitHub Pages, etc.) without broken links.
+ * - alias ('@') : Creates a shortcut to the 'src' folder for cleaner file 
+ *                 imports (e.g., import X from '@/components/X').
  * ============================================================================
  */
 
