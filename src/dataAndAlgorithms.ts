@@ -5,7 +5,7 @@
  * Project By: PHANI NANDAN M S, VEDHESHA PARTHIBAN, KHADGA LOHITH K, SHIVANI BALLANI
  * ============================================================================
  *
- * FILE SUMMARY (5-MINUTE VIVA EXPLANATION):
+ * FILE SUMMARY:
  * This single file holds our Crop/Pest dataset (15 Crops, 18 Pests) and the
  * 4 Data Structures used in our pipeline:
  *
