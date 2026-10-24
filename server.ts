@@ -2,7 +2,7 @@
  * ============================================================================
  * FULL-STACK BACKEND SERVER & VISION PROXY
  * ----------------------------------------------------------------------------
- * Project Lead: Phani Nandan M S (phaninandan78@gmail.com)
+ * Project By: PHANI NANDAN M S, VEDHESHA PARTHIBAN, KHADGA LOHITH K, SHIVANI BALLANI
  * 5th-Semester B.Tech AI & DS Design Project
  * 
  * Architecture Summary:
@@ -124,8 +124,8 @@ Return ONLY valid raw JSON with NO markdown code fences or backticks.`;
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'online',
-    project: 'Smart Pest Detection and Treatment Recommendation System',
-    lead: 'Phani Nandan M S',
+    project: 'SMART PEST DETECTION AND TREATMENT RECOMMENDATION SYSTEM USING COMPUTER VISION AND MACHINE LEARNING',
+    projectBy: 'PHANI NANDAN M S, VEDHESHA PARTHIBAN, KHADGA LOHITH K, SHIVANI BALLANI',
     semester: '5th-Semester B.Tech AI & DS',
     timestamp: new Date().toISOString()
   });

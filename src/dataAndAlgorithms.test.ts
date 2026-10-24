@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * UNIT TESTS FOR SIMPLIFIED 4-STAGE PIPELINE
- * Project Lead: Phani Nandan M S
+ * Project By: PHANI NANDAN M S, VEDHESHA PARTHIBAN, KHADGA LOHITH K, SHIVANI BALLANI
  * ============================================================================
  */
 

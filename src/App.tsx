@@ -1,8 +1,8 @@
 /**
  * ============================================================================
- * SMART PEST DETECTION AND TREATMENT RECOMMENDATION SYSTEM
+ * SMART PEST DETECTION AND TREATMENT RECOMMENDATION SYSTEM USING COMPUTER VISION AND MACHINE LEARNING
  * 5th-Semester B.Tech AI & DS Design Project
- * Project Lead & System Administrator: Phani Nandan M S (phaninandan78@gmail.com)
+ * Project By: PHANI NANDAN M S, VEDHESHA PARTHIBAN, KHADGA LOHITH K, SHIVANI BALLANI
  * ============================================================================
  *
  * APPLICATION ARCHITECTURE SUMMARY:
@@ -15,7 +15,7 @@
  *   Section 3: Login & Sign-Up Gate Screen (Shown first before opening website)
  *   Section 4: MNC-Grade Dashboard & Leaf Scanner Tab
  *   Section 5: My Scans History, Feedback & Complaints, and 5-Min Algorithm Guide
- *   Section 6: Admin Portal (Exclusive to Project Lead Phani Nandan M S)
+ *   Section 6: Admin Portal (Team & System Administration)
  * ============================================================================
  */
 
@@ -263,12 +263,12 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<{
     name: string;
     email: string;
-    role: 'Project Lead / Admin' | 'Field Agronomist';
+    role: 'Project Team / Admin' | 'Field Agronomist';
     isAdmin: boolean;
   }>({
-    name: 'Phani Nandan M S',
+    name: 'PHANI NANDAN M S',
     email: 'phaninandan78@gmail.com',
-    role: 'Project Lead / Admin',
+    role: 'Project Team / Admin',
     isAdmin: true
   });
 
@@ -317,8 +317,7 @@ export default function App() {
 
   // --------------------------------------------------------------------------
   // STEP 4: LOGIN & SIGN-UP HANDLERS
-  // Summary: Validates user input and assigns Admin rights if the user is
-  // Project Lead Phani Nandan M S (phaninandan78@gmail.com).
+  // Summary: Validates user input and assigns Admin rights to the Project Team.
   // --------------------------------------------------------------------------
   const handleAuthSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -327,17 +326,20 @@ export default function App() {
       setAuthError('Please enter both your email address and password.');
       return;
     }
-    const isPhaniAdmin =
+    const isTeamAdmin =
       cleanEmail === 'phaninandan78@gmail.com' ||
-      authName.toLowerCase().includes('phani nandan');
+      authName.toLowerCase().includes('phani') ||
+      authName.toLowerCase().includes('vedhesha') ||
+      authName.toLowerCase().includes('khadga') ||
+      authName.toLowerCase().includes('shivani');
 
     setCurrentUser({
-      name: isPhaniAdmin
-        ? 'Phani Nandan M S'
+      name: isTeamAdmin
+        ? authName.trim().toUpperCase() || 'PHANI NANDAN M S'
         : authName.trim() || cleanEmail.split('@')[0].replace('.', ' '),
       email: cleanEmail,
-      role: isPhaniAdmin ? 'Project Lead / Admin' : 'Field Agronomist',
-      isAdmin: isPhaniAdmin
+      role: isTeamAdmin ? 'Project Team / Admin' : 'Field Agronomist',
+      isAdmin: isTeamAdmin
     });
     setAuthError('');
     setIsLoggedIn(true);
@@ -346,9 +348,9 @@ export default function App() {
   const handleQuickLogin = (asAdmin: boolean) => {
     if (asAdmin) {
       setCurrentUser({
-        name: 'Phani Nandan M S',
+        name: 'PHANI NANDAN M S',
         email: 'phaninandan78@gmail.com',
-        role: 'Project Lead / Admin',
+        role: 'Project Team / Admin',
         isAdmin: true
       });
     } else {
@@ -450,7 +452,7 @@ export default function App() {
           ? {
               ...c,
               status: 'Resolved ✓',
-              adminReply: 'Verified and resolved by Project Lead Phani Nandan M S. Model weights and treatment dosage table updated.'
+              adminReply: 'Verified and resolved by Project Team (PHANI NANDAN M S, VEDHESHA PARTHIBAN, KHADGA LOHITH K, SHIVANI BALLANI). Model weights and treatment dosage table updated.'
             }
           : c
       )
@@ -486,41 +488,46 @@ export default function App() {
         <div className="absolute -bottom-40 left-1/3 w-96 h-96 rounded-full bg-indigo-500/15 blur-3xl pointer-events-none" />
 
         {/* Top Bar on Login Page */}
-        <header className="relative z-10 max-w-7xl w-full mx-auto px-6 py-5 flex items-center justify-between">
+        <header className="relative z-10 max-w-7xl w-full mx-auto px-6 py-5 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-slate-950 font-bold shadow-lg shadow-emerald-500/20">
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-slate-950 font-bold shadow-lg shadow-emerald-500/20">
               <Sprout className="w-6 h-6" />
             </div>
             <div>
-              <span className="text-lg font-extrabold tracking-tight text-white block leading-none">
-                AgriGuard AI · Enterprise
+              <span className="text-xs sm:text-sm font-extrabold tracking-tight text-white block leading-snug">
+                SMART PEST DETECTION AND TREATMENT RECOMMENDATION SYSTEM USING COMPUTER VISION AND MACHINE LEARNING
               </span>
-              <span className="text-[11px] text-emerald-400 font-semibold tracking-wider uppercase">
-                Smart Pest Detection & Treatment System
+              <span className="text-[11px] text-emerald-400 font-semibold tracking-wider uppercase block mt-0.5">
+                PROJECT BY: PHANI NANDAN M S , VEDHESHA PARTHIBAN , KHADGA LOHITH K , SHIVANI BALLANI
               </span>
             </div>
-          </div>
-          <div className="text-right hidden sm:block">
-            <span className="text-xs text-slate-400 block">5th-Sem B.Tech AI & DS Design Project</span>
-            <span className="text-xs font-bold text-emerald-400">Project Lead: Phani Nandan M S</span>
           </div>
         </header>
 
         {/* Center Split Login & Project Showcase */}
         <main className="relative z-10 max-w-6xl w-full mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-          {/* Left Column: MNC Value Proposition */}
+          {/* Left Column: Project Title & Overview */}
           <div className="lg:col-span-7 space-y-6">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>AI & Data Structures Powered Crop Protection Platform</span>
+              <span>5th-Semester B.Tech AI & DS Design Project</span>
             </div>
 
-            <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight">
-              Precision Pest Detection &{' '}
+            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight uppercase">
+              SMART PEST DETECTION AND TREATMENT RECOMMENDATION SYSTEM{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">
-                Smart Treatment Ranking
+                USING COMPUTER VISION AND MACHINE LEARNING
               </span>
             </h1>
+
+            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-xs sm:text-sm">
+              <span className="text-emerald-400 font-extrabold uppercase tracking-wider block mb-1">
+                PROJECT BY:
+              </span>
+              <span className="font-extrabold text-white tracking-wide">
+                PHANI NANDAN M S &nbsp;•&nbsp; VEDHESHA PARTHIBAN &nbsp;•&nbsp; KHADGA LOHITH K &nbsp;•&nbsp; SHIVANI BALLANI
+              </span>
+            </div>
 
             <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-xl">
               An enterprise-grade agricultural decision support system combining computer vision with four classical Data Structures: <strong>Feature Arrays</strong>, <strong>O(1) Hash Tables</strong>, <strong>Decision Trees</strong>, and <strong>Priority Queue Max-Heaps</strong>.
@@ -578,8 +585,8 @@ export default function App() {
                 </button>
               </div>
 
-              <h2 className="text-lg font-bold text-white mb-1">
-                {authMode === 'login' ? 'Welcome Back to AgriGuard Portal' : 'Create Your Agronomist Account'}
+              <h2 className="text-sm font-extrabold text-white mb-1 uppercase leading-snug">
+                SMART PEST DETECTION AND TREATMENT RECOMMENDATION SYSTEM USING COMPUTER VISION AND MACHINE LEARNING
               </h2>
               <p className="text-xs text-slate-400 mb-5">
                 {authMode === 'login'
@@ -673,9 +680,13 @@ export default function App() {
         </main>
 
         {/* Login Footer */}
-        <footer className="relative z-10 max-w-7xl w-full mx-auto px-6 py-4 text-center sm:flex items-center justify-between text-xs text-slate-500 border-t border-slate-900">
-          <span>Smart Pest Detection and Treatment Recommendation System</span>
-          <span>Designed & Developed by Phani Nandan M S (5th-Sem AI & DS)</span>
+        <footer className="relative z-10 max-w-7xl w-full mx-auto px-6 py-4 text-center sm:flex items-center justify-between text-xs text-slate-500 border-t border-slate-900 gap-4">
+          <span className="font-bold text-slate-400">
+            SMART PEST DETECTION AND TREATMENT RECOMMENDATION SYSTEM USING COMPUTER VISION AND MACHINE LEARNING
+          </span>
+          <span className="font-bold text-emerald-400">
+            Project By: PHANI NANDAN M S , VEDHESHA PARTHIBAN , KHADGA LOHITH K , SHIVANI BALLANI
+          </span>
         </footer>
       </div>
     );
@@ -694,17 +705,17 @@ export default function App() {
           -------------------------------------------------------------------- */}
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border-b border-slate-200 dark:border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
-          {/* Brand Logo */}
-          <div className="flex items-center gap-2.5 shrink-0">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
+          {/* Brand Logo & Exact Project Title */}
+          <div className="flex items-center gap-2.5 max-w-md lg:max-w-sm xl:max-w-md">
+            <div className="w-9 h-9 shrink-0 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
               <Sprout className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-sm sm:text-base font-extrabold tracking-tight text-slate-900 dark:text-white block leading-none">
-                AgriGuard AI
+              <span className="text-[11px] sm:text-xs font-extrabold tracking-tight text-slate-900 dark:text-white block leading-tight uppercase">
+                SMART PEST DETECTION AND TREATMENT RECOMMENDATION SYSTEM USING COMPUTER VISION AND MACHINE LEARNING
               </span>
-              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block mt-0.5">
-                Lead: Phani Nandan M S
+              <span className="text-[9px] sm:text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block mt-0.5">
+                Project By: PHANI NANDAN M S , VEDHESHA PARTHIBAN , KHADGA LOHITH K , SHIVANI BALLANI
               </span>
             </div>
           </div>
@@ -809,6 +820,16 @@ export default function App() {
             ==================================================================== */}
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
+            {/* Project Title Banner */}
+            <div className="rounded-2xl p-5 bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white border border-emerald-500/30 shadow-md">
+              <div className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider mb-1">
+                PROJECT BY: PHANI NANDAN M S , VEDHESHA PARTHIBAN , KHADGA LOHITH K , SHIVANI BALLANI
+              </div>
+              <h1 className="text-base sm:text-xl font-extrabold tracking-tight uppercase leading-snug">
+                SMART PEST DETECTION AND TREATMENT RECOMMENDATION SYSTEM USING COMPUTER VISION AND MACHINE LEARNING
+              </h1>
+            </div>
+
             {/* MNC Executive Colorful KPI Strip */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-lg shadow-emerald-600/15">
@@ -842,11 +863,12 @@ export default function App() {
 
               <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/15">
                 <div className="flex items-center justify-between opacity-90 text-xs font-semibold">
-                  <span>PROJECT LEAD / ADMIN</span>
+                  <span>PROJECT BY</span>
                   <Award className="w-4 h-4" />
                 </div>
-                <div className="text-xl font-extrabold mt-2 truncate">Phani Nandan M S</div>
-                <div className="text-[11px] opacity-90 mt-1">5th-Sem B.Tech AI & DS</div>
+                <div className="text-xs font-extrabold mt-2 leading-snug">
+                  PHANI NANDAN M S, VEDHESHA PARTHIBAN, KHADGA LOHITH K, SHIVANI BALLANI
+                </div>
               </div>
             </div>
 
@@ -1258,7 +1280,7 @@ export default function App() {
                 Submit Detection Complaint or Feedback
               </h3>
               <p className="text-xs text-slate-500 mb-4">
-                Report false detections or dosage queries directly to Admin Phani Nandan M S.
+                Report false detections or dosage queries directly to the Project Team.
               </p>
 
               {fbSuccessBanner && (
@@ -1380,7 +1402,7 @@ export default function App() {
                   </div>
                   {item.adminReply && (
                     <div className="mt-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300">
-                      <strong>Admin Reply (Phani Nandan M S):</strong> {item.adminReply}
+                      <strong>Admin Reply:</strong> {item.adminReply}
                     </div>
                   )}
                 </div>
@@ -1535,7 +1557,7 @@ treatments.sort((a, b) => b.score - a.score); // Highest #1`}
         )}
 
         {/* ====================================================================
-            SECTION 6: TAB 5 — ADMIN PORTAL (EXCLUSIVE TO PHANI NANDAN M S)
+            SECTION 6: TAB 5 — ADMIN PORTAL
             ==================================================================== */}
         {activeTab === 'admin' && (
           <div className="space-y-6">
@@ -1544,13 +1566,13 @@ treatments.sort((a, b) => b.score - a.score); // Highest #1`}
                 <Lock className="w-12 h-12 text-rose-500 mx-auto" />
                 <h2 className="text-lg font-extrabold">Restricted Administrator Portal</h2>
                 <p className="text-xs text-slate-500">
-                  This portal is strictly locked to Project Lead <strong>Phani Nandan M S</strong> (<code>phaninandan78@gmail.com</code>).
+                  This portal is strictly locked to <strong>Project By: PHANI NANDAN M S, VEDHESHA PARTHIBAN, KHADGA LOHITH K, SHIVANI BALLANI</strong>.
                 </p>
                 <button
                   onClick={() => handleQuickLogin(true)}
                   className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold cursor-pointer"
                 >
-                  Switch to Phani Nandan M S (Admin Account)
+                  Switch to Admin Account
                 </button>
               </div>
             ) : (
@@ -1561,8 +1583,8 @@ treatments.sort((a, b) => b.score - a.score); // Highest #1`}
                     <span className="text-[11px] font-mono uppercase text-emerald-400 font-bold">
                       ✓ Verified System Administrator
                     </span>
-                    <h2 className="text-2xl font-extrabold mt-0.5">
-                      Executive Admin Portal · Phani Nandan M S
+                    <h2 className="text-xl sm:text-2xl font-extrabold mt-0.5">
+                      Project By: PHANI NANDAN M S , VEDHESHA PARTHIBAN , KHADGA LOHITH K , SHIVANI BALLANI
                     </h2>
                     <p className="text-xs text-slate-300">
                       Manage farmer complaints with one-click resolution and inspect all 18 pests in the Hash Table.
@@ -1678,9 +1700,11 @@ treatments.sort((a, b) => b.score - a.score); // Highest #1`}
       {/* FOOTER */}
       <footer className="mt-auto border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-4 px-6 text-xs text-slate-500">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>Smart Pest Detection & Treatment Recommendation System (5th-Sem AI & DS)</span>
           <span className="font-bold text-slate-700 dark:text-slate-300">
-            Project Lead / Administrator: Phani Nandan M S
+            SMART PEST DETECTION AND TREATMENT RECOMMENDATION SYSTEM USING COMPUTER VISION AND MACHINE LEARNING
+          </span>
+          <span className="font-bold text-emerald-600 dark:text-emerald-400">
+            Project By: PHANI NANDAN M S , VEDHESHA PARTHIBAN , KHADGA LOHITH K , SHIVANI BALLANI
           </span>
         </div>
       </footer>

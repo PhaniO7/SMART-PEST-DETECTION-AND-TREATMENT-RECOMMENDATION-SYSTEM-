@@ -1,8 +1,8 @@
 /**
  * ============================================================================
- * SMART PEST DETECTION & TREATMENT RECOMMENDATION SYSTEM
+ * SMART PEST DETECTION AND TREATMENT RECOMMENDATION SYSTEM USING COMPUTER VISION AND MACHINE LEARNING
  * 5th-Semester B.Tech AI & DS Design Project
- * Project Lead / Administrator: Phani Nandan M S (phaninandan78@gmail.com)
+ * Project By: PHANI NANDAN M S, VEDHESHA PARTHIBAN, KHADGA LOHITH K, SHIVANI BALLANI
  * ============================================================================
  *
  * FILE SUMMARY (5-MINUTE VIVA EXPLANATION):
