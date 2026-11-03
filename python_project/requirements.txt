@@ -26,5 +26,7 @@ matplotlib>=3.8.4
 pandas>=2.2.2
 PyYAML>=6.0.1
 
-# --- Automated Unit Testing ---
+# --- Automated Unit Testing & Cloud Hosting WSGI Server ---
 pytest>=8.2.0
+gunicorn>=21.2.0
+

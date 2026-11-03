@@ -1,9 +1,17 @@
+# ==============================================================================
+# FILE: .github/workflows/deploy.yml
+# PURPOSE:
+#   Automatically builds and deploys the web application to GitHub Pages
+#   whenever code is pushed to the `main` or `master` branch.
+#   Why this is needed: Browsers cannot run `/src/main.tsx` directly from source.
+#   This workflow compiles TypeScript/React into `dist/` and publishes `dist/`.
+# ==============================================================================
+
 name: Deploy to GitHub Pages
 
 on:
   push:
-    branches:
-      - main
+    branches: ["main", "master"]
   workflow_dispatch:
 
 permissions:
@@ -12,37 +20,37 @@ permissions:
   id-token: write
 
 concurrency:
-  group: 'pages'
+  group: "pages"
   cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  build_and_deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Set up Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Build Application
+      - name: Build production bundle into dist/
         run: npm run build
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v5
 
-      - name: Upload Artifact
+      - name: Upload dist/ artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist'
+          path: "./dist"
 
       - name: Deploy to GitHub Pages
         id: deployment
