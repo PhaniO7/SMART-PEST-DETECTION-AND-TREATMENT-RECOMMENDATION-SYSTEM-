@@ -1,32 +1,29 @@
 # ==============================================================================
 # FILE: requirements.txt
-# PURPOSE: Lists all Python packages required to run the Flask web application,
-#          SQLite database, PyTorch CNN model, Ultralytics YOLOv8 detector,
-#          OpenCV image processing pipeline, and pytest unit test suite.
-# HOW TO USE: Run `pip install -r requirements.txt` in your terminal or Colab.
+# PURPOSE: Lists all Python libraries needed to run the Streamlit website,
+#          PyTorch EfficientNet-B0 CNN, Ultralytics YOLOv8n detector, OpenCV
+#          image preprocessing, and pytest automated tests locally in VS Code.
+# HOW IT CONNECTS: Install with `pip install -r requirements.txt` before running
+#                  `prepare_data.py`, `train_cnn.py`, `train_yolo.py`, or
+#                  `streamlit run app.py`.
 # ==============================================================================
 
-# --- Web Framework, Database & Authentication ---
-Flask==3.0.3
-Flask-SQLAlchemy==3.1.1
-Flask-Login==0.6.3
-Werkzeug==3.0.4
+# --- Website UI (100% Python, no HTML/CSS/JS files needed) ---
+streamlit>=1.35.0
 
-# --- Deep Learning & Computer Vision (Real CNN + YOLOv8) ---
+# --- Deep Learning & Computer Vision (CNN + YOLOv8n) ---
 torch>=2.2.0
 torchvision>=0.17.0
 ultralytics>=8.2.0
-opencv-python-headless>=4.9.0.80
+opencv-python>=4.9.0.80
 numpy>=1.26.0
 Pillow>=10.3.0
 
-# --- Dataset Preparation, Metrics & Evaluation Plots ---
+# --- Dataset Preparation, Evaluation Metrics & Plots ---
 scikit-learn>=1.4.2
 matplotlib>=3.8.4
 pandas>=2.2.2
 PyYAML>=6.0.1
 
-# --- Automated Unit Testing & Cloud Hosting WSGI Server ---
+# --- Automated Testing ---
 pytest>=8.2.0
-gunicorn>=21.2.0
-

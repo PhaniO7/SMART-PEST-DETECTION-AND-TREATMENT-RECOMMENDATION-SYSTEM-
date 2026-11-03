@@ -2,233 +2,229 @@
 ================================================================================
 FILE: config.py
 PURPOSE:
-    Central configuration file for the entire Python project:
-    "SMART PEST DETECTION AND TREATMENT RECOMMENDATION SYSTEM USING
-     COMPUTER VISION AND MACHINE LEARNING"
-    Project By: PHANI NANDAN M S, VEDHESHA PARTHIBAN, KHADGA LOHITH K, SHIVANI BALLANI
-
-CONCEPTS USED:
-    - Centralised Configuration Pattern (# [CONFIG]): Keeps every tunable number,
-      file path, model hyperparameter, and scoring weight in ONE place so there
-      are zero "magic numbers" scattered across other files.
+    Stores ALL tunable settings, file paths, model hyperparameters, thresholds,
+    scoring weights, the 8 crops list (`CROPS`), and the 20-pest shortlist
+    (`PEST_SHORTLIST`) in one place so there are zero magic numbers elsewhere.
 
 HOW IT CONNECTS TO OTHER FILES:
-    - Imported by `prepare_dataset.py` for IP102 dataset paths and TOP_N_CLASSES.
-    - Imported by `train_cnn.py`, `train_yolo.py`, and `evaluate.py` for training
-      hyperparameters and model weight paths.
-    - Imported by `dsa_pipeline.py` for Hash Table bucket size, Decision Tree
-      severity thresholds, and Priority Queue scoring weights.
-    - Imported by `models_loader.py`, `inference.py`, `database.py`, `auth.py`,
-      and `app.py` for Flask settings, confidence cutoffs, and admin accounts.
+    - Imported by `prepare_data.py` to match the 20 pests in IP102 `classes.txt`.
+    - Imported by `pest_data.py` and `dsa.py` for hash table buckets, decision
+      tree severity thresholds, and priority queue scoring weights.
+    - Imported by `train_cnn.py`, `train_yolo.py`, `evaluate.py`, and `detect.py`
+      for RTX 4050 (6 GB VRAM) training settings, model paths, and cutoffs.
+    - Imported by `database.py` and `app.py` for SQLite settings, admin emails,
+      and dynamic `{NUM_CROPS} crops and {NUM_PESTS} pests` labels.
 ================================================================================
 """
 
-# Import os module to build cross-platform file and folder paths safely
+# Import os so we can build file paths that work on Windows, Mac, and Linux
 import os
 
 # ==============================================================================
-# 1. PROJECT METADATA & BRANDING CONSTANTS
+# 1. PROJECT METADATA & ADMIN ACCOUNTS
 # ==============================================================================
 
-# # [CONFIG] Official project title displayed on every page header and login card
+# # [CONFIG] Official project title displayed at the top of the Streamlit app
 PROJECT_TITLE = (
-    "SMART PEST DETECTION AND TREATMENT RECOMMENDATION SYSTEM "
-    "USING COMPUTER VISION AND MACHINE LEARNING"
-)
+    "Smart Pest Detection and Treatment Recommendation System "
+    "using Computer Vision and Machine Learning"
+)  # # [CHANGE_HERE] Change project title if needed
 
-# # [CONFIG] # [CHANGE_HERE] Edit team member names if needed for your report
-PROJECT_BY = "PHANI NANDAN M S , VEDHESHA PARTHIBAN , KHADGA LOHITH K , SHIVANI BALLANI"
+# # [CONFIG] Team member names displayed in the Streamlit header and sidebar
+PROJECT_TEAM = (
+    "PHANI NANDAN M S , VEDHESHA PARTHIBAN , KHADGA LOHITH K , SHIVANI BALLANI"
+)  # # [CHANGE_HERE] Edit team member names here
 
-# # [CONFIG] Base directory of the project (automatically resolves to this folder)
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-
-# ==============================================================================
-# 2. FLASK & SQLITE DATABASE CONFIGURATION
-# ==============================================================================
-
-# # [CONFIG] # [CHANGE_HERE] Secret key used by Flask to sign session cookies
-SECRET_KEY = os.environ.get("FLASK_SECRET_KEY", "btech-5th-sem-smart-pest-secret-key-2026")
-
-# # [CONFIG] # [DATABASE] Path to the local SQLite database file
-SQLITE_DB_PATH = os.path.join(BASE_DIR, "pest_system.db")
-
-# # [CONFIG] # [DATABASE] SQLAlchemy connection URI pointing to SQLite
-SQLALCHEMY_DATABASE_URI = f"sqlite:///{SQLITE_DB_PATH}"
-
-# # [CONFIG] Disable SQLAlchemy modification tracking overhead
-SQLALCHEMY_TRACK_MODIFICATIONS = False
-
-# # [CONFIG] Folder where user-uploaded leaf photos and YOLO annotated images are saved
-UPLOAD_FOLDER = os.path.join(BASE_DIR, "static", "uploads")
-
-# # [CONFIG] Allowed image file extensions for leaf photo uploads
-ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
-
-# # [CONFIG] # [CHANGE_HERE] Port number for running the local Flask web server
-PORT = int(os.environ.get("PORT", 5000))
-
-# # [CONFIG] # [ADMIN] # [CHANGE_HERE] Default Admin email addresses that automatically get 'admin' role
-ADMIN_EMAILS = {
+# # [CONFIG] # [ADMIN] # [LOGIN] Emails that automatically get the "admin" role
+ADMIN_EMAILS = [
     "phaninandan78@gmail.com",
-    "vedhesha@pestproject.in",
-    "khadga@pestproject.in",
-    "shivani@pestproject.in",
-}
+    "admin@pestsystem.edu",
+]  # # [CHANGE_HERE] Add or change admin email addresses here
+
+# # [CONFIG] # [LOGIN] Salt string used with Python's standard library hashlib
+PASSWORD_HASH_SALT = "btech_aids_ip102_pest_salt_2026"  # # [CHANGE_HERE] Change password salt string
+
+# # [CONFIG] # [LOGIN] Number of PBKDF2-HMAC-SHA256 iterations for password hashing
+PASSWORD_HASH_ITERATIONS = 100_000  # # [CHANGE_HERE] Increase or decrease hash iterations
+
 
 # ==============================================================================
-# 3. IP102 DATASET & PREPARATION CONFIGURATION
+# 2. DIRECTORY & FILE PATHS
 # ==============================================================================
 
-# # [CONFIG] # [DATASET] # [CHANGE_HERE] Path to your downloaded raw IP102 dataset folder
-RAW_IP102_DIR = os.environ.get("RAW_IP102_DIR", os.path.join(BASE_DIR, "raw_ip102"))
+# # [CONFIG] Base folder where this Python project lives
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# # [CONFIG] # [DATASET] Output folder for the filtered 20-class CNN classification dataset
-CNN_DATASET_DIR = os.path.join(BASE_DIR, "dataset_cnn")
+# # [CONFIG] # [DATASET] Folder where the raw IP102 dataset is downloaded
+IP102_RAW_DIR = os.path.join(
+    BASE_DIR, "ip102_v1.1"
+)  # # [CHANGE_HERE] Point this to your downloaded IP102 folder path
 
-# # [CONFIG] # [DATASET] Output folder for the filtered 20-class YOLOv8 detection dataset
-YOLO_DATASET_DIR = os.path.join(BASE_DIR, "dataset_yolo")
+# # [CONFIG] # [DATASET] Folder where `prepare_data.py` builds CNN and YOLO datasets
+PROCESSED_DATA_DIR = os.path.join(BASE_DIR, "datasets", "ip102_20pests")
 
-# # [CONFIG] # [DATASET] Path to the generated YOLOv8 data.yaml configuration file
-YOLO_DATA_YAML_PATH = os.path.join(YOLO_DATASET_DIR, "data.yaml")
+# # [CONFIG] # [DATASET] Subfolders for CNN classification and YOLO detection data
+CNN_DATA_DIR = os.path.join(PROCESSED_DATA_DIR, "cnn")
+YOLO_DATA_DIR = os.path.join(PROCESSED_DATA_DIR, "yolo")
+YOLO_DATA_YAML = os.path.join(YOLO_DATA_DIR, "data.yaml")
 
-# # [CONFIG] # [DATASET] # [CHANGE_HERE] Number of top IP102 classes to select (must be between 15 and 20)
-TOP_N_CLASSES = 20
-
-# # [CONFIG] # [DATASET] Minimum and maximum allowed values for TOP_N_CLASSES
-MIN_CLASSES_ALLOWED = 15
-MAX_CLASSES_ALLOWED = 20
-
-# # [CONFIG] # [DATASET] Minimum number of distinct crops that must be represented in selected classes
-MIN_CROPS_REPRESENTED = 2
-
-# ==============================================================================
-# 4. REAL DEEP LEARNING MODELS (CNN & YOLOv8) CONFIGURATION
-# ==============================================================================
-
-# # [CONFIG] Directory where trained model weights (.pt) and class_map.json are stored
+# # [CONFIG] # [CNN] # [YOLO] Folder where trained model weights are saved
 MODELS_DIR = os.path.join(BASE_DIR, "models")
+CNN_WEIGHTS_PATH = os.path.join(
+    MODELS_DIR, "cnn_pest.pt"
+)  # # [CHANGE_HERE] Path to trained PyTorch EfficientNet-B0 weights
+YOLO_WEIGHTS_PATH = os.path.join(
+    MODELS_DIR, "yolo_pest.pt"
+)  # # [CHANGE_HERE] Path to trained Ultralytics YOLOv8n weights
+CONFUSION_MATRIX_PATH = os.path.join(MODELS_DIR, "confusion_matrix.png")
 
-# # [CONFIG] # [CNN] Path to the trained PyTorch CNN weights file
-CNN_WEIGHTS_PATH = os.path.join(MODELS_DIR, "cnn_pest.pt")
+# # [CONFIG] # [DATABASE] SQLite database file path and uploaded scan images folder
+DATABASE_PATH = os.path.join(
+    BASE_DIR, "pest_system.db"
+)  # # [CHANGE_HERE] Change SQLite database filename if needed
+UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
 
-# # [CONFIG] # [YOLO] Path to the trained Ultralytics YOLOv8 weights file
-YOLO_WEIGHTS_PATH = os.path.join(MODELS_DIR, "yolo_pest.pt")
 
-# # [CONFIG] # [DATASET] Path to the JSON mapping between class indices, IP102 IDs, pest names, and crops
-CLASS_MAP_PATH = os.path.join(MODELS_DIR, "class_map.json")
+# ==============================================================================
+# 3. SCOPE: 8 CROPS AND 20 PESTS (IP102 SHORTLIST)
+# ==============================================================================
 
-# # [CONFIG] # [CNN] # [CHANGE_HERE] Backbone architecture for transfer learning ('efficientnet_b0' or 'resnet50')
-CNN_BACKBONE_NAME = "efficientnet_b0"
+# # [CONFIG] # [DATASET] List of the 8 crops covered by the IP102 dataset
+CROPS = [
+    "Rice",
+    "Corn",
+    "Wheat",
+    "Beet",
+    "Alfalfa",
+    "Vitis (Grape)",
+    "Citrus",
+    "Mango",
+]  # # [CHANGE_HERE] List of supported host crops
 
-# # [CONFIG] # [PREPROCESS] Input image width and height (in pixels) required by the CNN
-CNN_IMAGE_SIZE = 224
+# # [CONFIG] # [DATASET] Ordered list of 20 pests (2-3 per crop).
+# IMPORTANT: Each item's index (0 to 19) IS its class ID across `prepare_data.py`,
+# `train_cnn.py`, `train_yolo.py`, `pest_data.py`, `detect.py`, and `app.py`.
+PEST_SHORTLIST = [
+    # --- Crop 1: Rice (3 pests, indices 0..2) ---
+    {"class_id": 0, "crop": "Rice", "name": "brown plant hopper", "match_keyword": "brown plant hopper"},
+    {"class_id": 1, "crop": "Rice", "name": "asiatic rice borer", "match_keyword": "asiatic rice borer"},
+    {"class_id": 2, "crop": "Rice", "name": "rice leaf roller", "match_keyword": "rice leaf roller"},
+    # --- Crop 2: Corn (3 pests, indices 3..5) ---
+    {"class_id": 3, "crop": "Corn", "name": "corn borer", "match_keyword": "corn borer"},
+    {"class_id": 4, "crop": "Corn", "name": "armyworm", "match_keyword": "armyworm"},
+    {"class_id": 5, "crop": "Corn", "name": "aphids", "match_keyword": "aphids"},
+    # --- Crop 3: Wheat (3 pests, indices 6..8) ---
+    {"class_id": 6, "crop": "Wheat", "name": "english grain aphid", "match_keyword": "english grain aphid"},
+    {"class_id": 7, "crop": "Wheat", "name": "red spider", "match_keyword": "red spider"},
+    {"class_id": 8, "crop": "Wheat", "name": "wheat blossom midge", "match_keyword": "wheat blossom midge"},
+    # --- Crop 4: Beet (2 pests, indices 9..10) ---
+    {"class_id": 9, "crop": "Beet", "name": "beet army worm", "match_keyword": "beet army worm"},
+    {"class_id": 10, "crop": "Beet", "name": "beet weevil", "match_keyword": "beet weevil"},
+    # --- Crop 5: Alfalfa (3 pests, indices 11..13) ---
+    {"class_id": 11, "crop": "Alfalfa", "name": "alfalfa weevil", "match_keyword": "alfalfa weevil"},
+    {"class_id": 12, "crop": "Alfalfa", "name": "tarnished plant bug", "match_keyword": "tarnished plant bug"},
+    {"class_id": 13, "crop": "Alfalfa", "name": "blister beetle", "match_keyword": "blister beetle"},
+    # --- Crop 6: Vitis (Grape) (2 major IP102 grape pests, indices 14..15) ---
+    {"class_id": 14, "crop": "Vitis (Grape)", "name": "ampelophaga", "match_keyword": "ampelophaga"},
+    {"class_id": 15, "crop": "Vitis (Grape)", "name": "brevipoalpus lewisi mcgregor", "match_keyword": "brevipoalpus lewisi"},
+    # --- Crop 7: Citrus (2 pests, indices 16..17) ---
+    {"class_id": 16, "crop": "Citrus", "name": "panonychus citri (citrus red mite)", "match_keyword": "panonychus citri"},
+    {"class_id": 17, "crop": "Citrus", "name": "phyllocnistis citrella (citrus leafminer)", "match_keyword": "phyllocnistis citrella"},
+    # --- Crop 8: Mango (2 pests, indices 18..19) ---
+    {"class_id": 18, "crop": "Mango", "name": "dacus dorsalis (mango fruit fly)", "match_keyword": "dacus dorsalis"},
+    {"class_id": 19, "crop": "Mango", "name": "cicadellidae (mango leafhopper)", "match_keyword": "cicadellidae"},
+]  # # [CHANGE_HERE] Edit pest names or match_keyword if your IP102 classes.txt uses different spelling
 
-# # [CONFIG] # [PREPROCESS] Standard ImageNet RGB mean values used to normalise CNN input tensors
+# # [CONFIG] # [DATASET] Dynamic counts computed with len() so the UI is never out of date
+NUM_CROPS = len(CROPS)
+NUM_PESTS = len(PEST_SHORTLIST)
+
+# # [CONFIG] # [DATASET] Minimum recommended images per class before `prepare_data.py` prints a warning
+MIN_IMAGES_WARNING_THRESHOLD = 300  # # [CHANGE_HERE] Warn if any class has fewer than this many images
+
+
+# ==============================================================================
+# 4. MODEL & RTX 4050 (6 GB VRAM) TRAINING SETTINGS
+# ==============================================================================
+
+# # [CONFIG] # [CNN] # [PREPROCESS] Input image width/height for EfficientNet-B0
+CNN_IMAGE_SIZE = 224  # # [CHANGE_HERE] 224x224 is standard for EfficientNet-B0
+
+# # [CONFIG] # [CNN] Pretrained Torchvision backbone name
+CNN_MODEL_NAME = "efficientnet_b0"  # # [CHANGE_HERE] Kept as EfficientNet-B0 for 6 GB VRAM efficiency
+
+# # [CONFIG] # [CNN] Small batch size tailored for a laptop RTX 4050 with 6 GB VRAM
+CNN_BATCH_SIZE = 16  # # [CHANGE_HERE] Reduce to 8 if VRAM is full, or increase to 32 on larger GPUs
+
+# # [CONFIG] # [CNN] Number of Windows/Linux DataLoader worker processes (2-4 recommended)
+DATALOADER_WORKERS = 2  # # [CHANGE_HERE] Set between 2 and 4 for laptop CPU cores
+
+# # [CONFIG] # [CNN] Training epochs for full run vs quick-test mode
+CNN_EPOCHS = 15  # # [CHANGE_HERE] Number of full training epochs for CNN
+QUICK_TEST_EPOCHS = 2  # # [CHANGE_HERE] Number of epochs when `--quick-test` flag is used
+
+# # [CONFIG] # [CNN] Learning rate for AdamW optimizer
+CNN_LEARNING_RATE = 1e-3  # # [CHANGE_HERE] Initial learning rate for CNN transfer learning
+CNN_WEIGHT_DECAY = 1e-4  # # [CHANGE_HERE] Weight decay regularization for AdamW
+
+# # [CONFIG] # [PREPROCESS] Standard ImageNet RGB mean and standard deviation
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
-
-# # [CONFIG] # [PREPROCESS] Standard ImageNet RGB standard deviation values for CNN input tensors
 IMAGENET_STD = [0.229, 0.224, 0.225]
 
-# # [CONFIG] # [YOLO] # [CHANGE_HERE] Base pretrained YOLOv8 checkpoint used when starting training
-YOLO_BASE_MODEL = "yolov8s.pt"
+# # [CONFIG] # [CNN] Number of top predictions returned by CNN Softmax
+CNN_TOP_K = 3  # # [CHANGE_HERE] Top-3 CNN predictions shown on the scanner page
 
-# # [CONFIG] # [YOLO] Input image resolution for YOLOv8 training and inference
-YOLO_IMAGE_SIZE = 640
+# # [CONFIG] # [YOLO] Ultralytics YOLOv8 nano model weight name (lightweight for 6 GB VRAM)
+YOLO_BASE_WEIGHTS = "yolov8n.pt"  # # [CHANGE_HERE] Base YOLOv8n pretrained checkpoint
+YOLO_IMAGE_SIZE = 512  # # [CHANGE_HERE] 512x512 keeps VRAM usage under 6 GB on RTX 4050
+YOLO_BATCH_SIZE = 8  # # [CHANGE_HERE] Small batch size for 6 GB VRAM laptop GPU
+YOLO_EPOCHS = 25  # # [CHANGE_HERE] Full training epochs for YOLOv8n
 
-# # [CONFIG] # [THRESHOLD] # [CHANGE_HERE] Minimum confidence score (0.0 to 1.0) required to accept a prediction.
-# Below this cutoff, the app displays "Uncertain, please retake the photo" instead of guessing.
-CONFIDENCE_CUTOFF = 0.45
+# # [CONFIG] # [YOLO] # [THRESHOLD] Minimum confidence to keep a YOLO bounding box
+YOLO_CONF_THRESHOLD = 0.25  # # [CHANGE_HERE] Lower to detect more boxes, raise for stricter boxes
+YOLO_IOU_THRESHOLD = 0.45  # # [CHANGE_HERE] Non-Maximum Suppression IoU threshold
 
-# # [CONFIG] # [YOLO] # [THRESHOLD] Minimum confidence threshold for drawing a YOLO bounding box
-YOLO_BOX_CONF_THRESHOLD = 0.25
+# # [CONFIG] # [THRESHOLD] Confidence cutoff below which the app shows "Uncertain, please retake the photo"
+CONFIDENCE_CUTOFF = 0.45  # # [CHANGE_HERE] Predictions below 45% confidence trigger the retake warning
 
-# # [CONFIG] # [YOLO] # [THRESHOLD] Intersection-over-Union (IoU) threshold for Non-Maximum Suppression (NMS)
-YOLO_IOU_THRESHOLD = 0.45
-
-# # [CONFIG] # [CNN] Number of top predictions returned by the CNN softmax classifier
-CNN_TOP_K = 3
 
 # ==============================================================================
-# 5. TRAINING HYPERPARAMETERS (FOR GOOGLE COLAB GPU SCRIPTS)
+# 5. FOUR DATA STRUCTURE STAGES (DSA) CONSTANTS
 # ==============================================================================
 
-# # [CONFIG] # [CNN] # [CHANGE_HERE] Batch size for CNN training and validation data loaders
-CNN_BATCH_SIZE = 32
-
-# # [CONFIG] # [CNN] # [CHANGE_HERE] Number of epochs for Phase 1 (backbone frozen, train classifier head only)
-CNN_EPOCHS_PHASE1_FROZEN = 5
-
-# # [CONFIG] # [CNN] # [CHANGE_HERE] Number of epochs for Phase 2 (unfreeze backbone, fine-tune entire network)
-CNN_EPOCHS_PHASE2_FINETUNE = 15
-
-# # [CONFIG] # [CNN] Learning rate for Phase 1 (classifier head training)
-CNN_LR_PHASE1 = 1e-3
-
-# # [CONFIG] # [CNN] Lower learning rate for Phase 2 (full network fine-tuning)
-CNN_LR_PHASE2 = 1e-4
-
-# # [CONFIG] # [CNN] Weight decay (L2 regularisation) to prevent overfitting
-CNN_WEIGHT_DECAY = 1e-4
-
-# # [CONFIG] # [CNN] Early stopping patience (stop if validation F1 does not improve for N epochs)
-EARLY_STOPPING_PATIENCE = 4
-
-# # [CONFIG] # [YOLO] # [CHANGE_HERE] Number of epochs for YOLOv8 training
-YOLO_EPOCHS = 30
-
-# # [CONFIG] # [YOLO] Batch size for YOLOv8 training
-YOLO_BATCH_SIZE = 16
-
-# ==============================================================================
-# 6. 4-STAGE DATA STRUCTURES & ALGORITHMS (DSA) CONFIGURATION
-# ==============================================================================
-
-# --- Stage 1: Feature Array (# [ARRAY]) ---
-# # [CONFIG] # [ARRAY] Fixed number of visual features extracted from each leaf image via OpenCV
+# --- Stage 1: Fixed-Size 8-Element Feature Array (# [ARRAY]) ---
+# # [CONFIG] # [ARRAY] Number of normalized visual features extracted by OpenCV
 FEATURE_ARRAY_SIZE = 8
-
-# # [CONFIG] # [ARRAY] Human-readable names of the 8 OpenCV visual features for the DSA Guide page
 FEATURE_NAMES = [
-    "0: Green Chrominance Ratio",
-    "1: Lesion Spot Density",
-    "2: Yellow Chlorosis Ratio",
-    "3: Canny Edge Sharpness",
-    "4: HSV Saturation Mean",
-    "5: Necrotic Dark Ratio",
-    "6: Laplacian Texture Variance",
-    "7: Normalized Brightness Mean",
+    "Green Healthy Leaf Ratio",
+    "Brown Necrotic Lesion Ratio",
+    "Yellow Chlorosis Ratio",
+    "Canny Edge Density",
+    "Grayscale Texture Entropy",
+    "Dark Spot Ratio",
+    "HSV Saturation Spread",
+    "Lab Colour Contrast",
 ]
 
-# --- Stage 2: Hash Table (# [HASH_TABLE]) ---
-# # [CONFIG] # [HASH_TABLE] # [CHANGE_HERE] Prime number of buckets in our custom Hash Table
-HASH_TABLE_BUCKETS = 31
+# # [CONFIG] # [PREPROCESS] Resize dimension used by OpenCV when computing the 8 visual features
+OPENCV_FEATURE_SIZE = 256  # # [CHANGE_HERE] Image size for OpenCV Stage 1 feature extraction
 
-# # [CONFIG] # [HASH_TABLE] Prime multiplier (base P) used in the Polynomial Rolling Hash function
-HASH_POLYNOMIAL_BASE = 31
+# --- Stage 2: 31-Bucket Hash Table (# [HASH_TABLE]) ---
+# # [CONFIG] # [HASH_TABLE] Prime number of buckets and polynomial rolling hash base
+HASH_TABLE_BUCKETS = 31  # # [CHANGE_HERE] Number of hash table buckets
+HASH_POLYNOMIAL_BASE = 31  # # [CHANGE_HERE] Prime multiplier for polynomial rolling hash
 
 # --- Stage 3: Decision Tree Severity Thresholds (# [DECISION_TREE] # [SEVERITY]) ---
-# # [CONFIG] # [DECISION_TREE] # [THRESHOLD] # [CHANGE_HERE] Affected leaf area % below this is 'Low' severity
-SEVERITY_LOW_MAX_PERCENT = 15.0
-
-# # [CONFIG] # [DECISION_TREE] # [THRESHOLD] # [CHANGE_HERE] Affected leaf area % up to this is 'Moderate'; above is 'Severe'
-SEVERITY_MODERATE_MAX_PERCENT = 35.0
+# # [CONFIG] # [DECISION_TREE] # [SEVERITY] Affected area % cutoffs: <15 Low, 15-35 Moderate, >35 Severe
+SEVERITY_LOW_MAX = 15.0  # # [CHANGE_HERE] Under 15% affected area = Low severity
+SEVERITY_MODERATE_MAX = 35.0  # # [CHANGE_HERE] 15% to 35% = Moderate; over 35% = Severe
 
 # --- Stage 4: Priority Queue Max-Heap Scoring Weights (# [PRIORITY_QUEUE] # [TREATMENT]) ---
-# # [CONFIG] # [PRIORITY_QUEUE] # [CHANGE_HERE] Bonus points added to Organic/Biological treatments when severity is Low
-ORGANIC_BONUS_LOW_SEVERITY = 18.0
+# # [CONFIG] # [PRIORITY_QUEUE] # [TREATMENT] Composite score weights (sum to 1.0)
+WEIGHT_EFFICACY = 0.50  # # [CHANGE_HERE] 50% weight for treatment efficacy %
+WEIGHT_PHI_SAFETY = 0.30  # # [CHANGE_HERE] 30% weight for short Pre-Harvest Interval (PHI days)
+WEIGHT_COST = 0.20  # # [CHANGE_HERE] 20% weight for lower cost per acre in INR
 
-# # [CONFIG] # [PRIORITY_QUEUE] # [CHANGE_HERE] Bonus points added to Organic/Biological treatments when severity is Moderate
-ORGANIC_BONUS_MODERATE_SEVERITY = 6.0
-
-# # [CONFIG] # [PRIORITY_QUEUE] # [CHANGE_HERE] Bonus points added to Chemical treatments when severity is Severe
-CHEMICAL_BONUS_SEVERE = 8.0
-
-# # [CONFIG] # [PRIORITY_QUEUE] # [CHANGE_HERE] Penalty divisor for Cost per Acre in INR (cost_inr / 100.0)
-COST_PENALTY_DIVISOR = 100.0
-
-# # [CONFIG] # [PRIORITY_QUEUE] # [CHANGE_HERE] Penalty multiplier per waiting day in Pre-Harvest Interval (PHI)
-PHI_PENALTY_MULTIPLIER = 0.4
-
-# # [CONFIG] # [PRIORITY_QUEUE] Minimum and maximum clamped bounds for the final Priority Score
-PRIORITY_SCORE_MIN = 50.0
-PRIORITY_SCORE_MAX = 99.5
+# # [CONFIG] # [PRIORITY_QUEUE] Normalization ceilings for PHI days and Cost in INR
+MAX_PHI_DAYS_CAP = 30.0  # # [CHANGE_HERE] PHI days above 30 get 0 PHI safety score
+MAX_COST_INR_CAP = 2500.0  # # [CHANGE_HERE] Cost/acre above Rs 2500 gets 0 cost score
