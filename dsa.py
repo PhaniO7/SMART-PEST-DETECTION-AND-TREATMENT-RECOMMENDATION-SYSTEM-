@@ -32,8 +32,14 @@ import math
 from typing import Any, Dict, List, Optional, Tuple
 
 # Import OpenCV and NumPy for Stage 1 visual feature extraction
-import cv2
-import numpy as np
+try:
+    import cv2
+    import numpy as np
+    HAS_OPENCV = True
+except ImportError:
+    cv2 = None  # type: ignore
+    np = None  # type: ignore
+    HAS_OPENCV = False
 
 # Import configuration constants and the 20-pest database
 import config
@@ -45,7 +51,7 @@ from pest_data import PEST_DATABASE
 # ==============================================================================
 
 # # [ARRAY] # [PREPROCESS]
-def extract_feature_array(image_bgr: np.ndarray) -> List[float]:
+def extract_feature_array(image_bgr: Any) -> List[float]:
     """
     Extracts a fixed-size 8-element normalized visual feature array in [0.0, 1.0]
     from a BGR leaf image using OpenCV:
@@ -68,56 +74,120 @@ def extract_feature_array(image_bgr: np.ndarray) -> List[float]:
     features: List[float] = [0.0] * config.FEATURE_ARRAY_SIZE
 
     # Guard against empty or invalid images
-    if image_bgr is None or image_bgr.size == 0:
+    if image_bgr is None:
         return features
 
-    # Resize image to fixed dimensions (256x256) for consistent pixel statistics
-    resized = cv2.resize(
-        image_bgr, (config.OPENCV_FEATURE_SIZE, config.OPENCV_FEATURE_SIZE)
-    )
-    total_pixels = float(config.OPENCV_FEATURE_SIZE * config.OPENCV_FEATURE_SIZE)
+    # If OpenCV and NumPy are installed, run the full OpenCV multi-colorspace pipeline
+    if HAS_OPENCV and isinstance(image_bgr, np.ndarray):
+        if image_bgr.size == 0:
+            return features
 
-    # Convert BGR image to HSV, Grayscale, and CIE Lab color spaces
-    hsv = cv2.cvtColor(resized, cv2.COLOR_BGR2HSV)
-    gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
-    lab = cv2.cvtColor(resized, cv2.COLOR_BGR2LAB)
+        # Resize image to fixed dimensions (256x256) for consistent pixel statistics
+        resized = cv2.resize(
+            image_bgr, (config.OPENCV_FEATURE_SIZE, config.OPENCV_FEATURE_SIZE)
+        )
+        total_pixels = float(config.OPENCV_FEATURE_SIZE * config.OPENCV_FEATURE_SIZE)
 
-    # Slot [0]: Green Healthy Leaf Ratio (Hue 35..85 in OpenCV HSV)
-    green_mask = cv2.inRange(hsv, np.array([35, 40, 40]), np.array([85, 255, 255]))
-    features[0] = round(float(np.count_nonzero(green_mask)) / total_pixels, 4)
+        # Convert BGR image to HSV, Grayscale, and CIE Lab color spaces
+        hsv = cv2.cvtColor(resized, cv2.COLOR_BGR2HSV)
+        gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+        lab = cv2.cvtColor(resized, cv2.COLOR_BGR2LAB)
 
-    # Slot [1]: Brown Necrotic Lesion Ratio (Hue 5..22 in OpenCV HSV)
-    brown_mask = cv2.inRange(hsv, np.array([5, 40, 20]), np.array([22, 255, 200]))
-    features[1] = round(float(np.count_nonzero(brown_mask)) / total_pixels, 4)
+        # Slot [0]: Green Healthy Leaf Ratio (Hue 35..85 in OpenCV HSV)
+        green_mask = cv2.inRange(hsv, np.array([35, 40, 40]), np.array([85, 255, 255]))
+        features[0] = round(float(np.count_nonzero(green_mask)) / total_pixels, 4)
 
-    # Slot [2]: Yellow Chlorosis Ratio (Hue 23..34 in OpenCV HSV)
-    yellow_mask = cv2.inRange(hsv, np.array([23, 40, 60]), np.array([34, 255, 255]))
-    features[2] = round(float(np.count_nonzero(yellow_mask)) / total_pixels, 4)
+        # Slot [1]: Brown Necrotic Lesion Ratio (Hue 5..22 in OpenCV HSV)
+        brown_mask = cv2.inRange(hsv, np.array([5, 40, 20]), np.array([22, 255, 200]))
+        features[1] = round(float(np.count_nonzero(brown_mask)) / total_pixels, 4)
 
-    # Slot [3]: Canny Edge Density (measures chewing margins and insect outlines)
-    edges = cv2.Canny(gray, 80, 180)
-    features[3] = round(float(np.count_nonzero(edges)) / total_pixels, 4)
+        # Slot [2]: Yellow Chlorosis Ratio (Hue 23..34 in OpenCV HSV)
+        yellow_mask = cv2.inRange(hsv, np.array([23, 40, 60]), np.array([34, 255, 255]))
+        features[2] = round(float(np.count_nonzero(yellow_mask)) / total_pixels, 4)
 
-    # Slot [4]: Grayscale Texture Entropy (Shannon entropy normalized by 8 bits)
-    hist = cv2.calcHist([gray], [0], None, [256], [0, 256]).ravel()
-    probs = hist / total_pixels
-    entropy = 0.0
-    for p in probs:
-        if p > 0:
-            entropy -= float(p) * math.log2(float(p))
-    features[4] = round(min(1.0, max(0.0, entropy / 8.0)), 4)
+        # Slot [3]: Canny Edge Density (measures chewing margins and insect outlines)
+        edges = cv2.Canny(gray, 80, 180)
+        features[3] = round(float(np.count_nonzero(edges)) / total_pixels, 4)
 
-    # Slot [5]: Dark Spot Ratio (Value channel < 45 indicating frass/sooty mould)
-    dark_mask = hsv[:, :, 2] < 45
-    features[5] = round(float(np.count_nonzero(dark_mask)) / total_pixels, 4)
+        # Slot [4]: Grayscale Texture Entropy (Shannon entropy normalized by 8 bits)
+        hist = cv2.calcHist([gray], [0], None, [256], [0, 256]).ravel()
+        probs = hist / total_pixels
+        entropy = 0.0
+        for p in probs:
+            if p > 0:
+                entropy -= float(p) * math.log2(float(p))
+        features[4] = round(min(1.0, max(0.0, entropy / 8.0)), 4)
 
-    # Slot [6]: HSV Saturation Spread (std dev of Saturation normalized by 128)
-    sat_std = float(np.std(hsv[:, :, 1])) / 128.0
-    features[6] = round(min(1.0, max(0.0, sat_std)), 4)
+        # Slot [5]: Dark Spot Ratio (Value channel < 45 indicating frass/sooty mould)
+        dark_mask = hsv[:, :, 2] < 45
+        features[5] = round(float(np.count_nonzero(dark_mask)) / total_pixels, 4)
 
-    # Slot [7]: Lab Colour Contrast (A-B chrominance spread normalized by 64)
-    lab_contrast = float(np.std(lab[:, :, 1]) + np.std(lab[:, :, 2])) / 64.0
-    features[7] = round(min(1.0, max(0.0, lab_contrast)), 4)
+        # Slot [6]: HSV Saturation Spread (std dev of Saturation normalized by 128)
+        sat_std = float(np.std(hsv[:, :, 1])) / 128.0
+        features[6] = round(min(1.0, max(0.0, sat_std)), 4)
+
+        # Slot [7]: Lab Colour Contrast (A-B chrominance spread normalized by 64)
+        lab_contrast = float(np.std(lab[:, :, 1]) + np.std(lab[:, :, 2])) / 64.0
+        features[7] = round(min(1.0, max(0.0, lab_contrast)), 4)
+
+        return features
+
+    # Pure-Python fallback for nested BGR pixel lists [H][W][3] when tested without OpenCV
+    if isinstance(image_bgr, list) and len(image_bgr) > 0 and len(image_bgr[0]) > 0:
+        h = len(image_bgr)
+        w = len(image_bgr[0])
+        total = float(h * w)
+        green_cnt = brown_cnt = yellow_cnt = dark_cnt = edge_cnt = 0
+        gray_hist = [0] * 256
+        sats: List[float] = []
+        rg_diffs: List[float] = []
+
+        for r_idx in range(h):
+            for c_idx in range(w):
+                px = image_bgr[r_idx][c_idx]
+                b, g, r = int(px[0]), int(px[1]), int(px[2])
+                gray_val = max(0, min(255, int(0.114 * b + 0.587 * g + 0.299 * r)))
+                gray_hist[gray_val] += 1
+
+                max_c = max(r, g, b)
+                min_c = min(r, g, b)
+                sat = 0.0 if max_c == 0 else ((max_c - min_c) / float(max_c)) * 255.0
+                sats.append(sat)
+                rg_diffs.append(abs(float(r - g)))
+
+                if max_c < 45:
+                    dark_cnt += 1
+                elif g > r * 1.15 and g > b * 1.15 and g > 40:
+                    green_cnt += 1
+                elif r > g > b and r > 50 and g < 180:
+                    brown_cnt += 1
+                elif r > 120 and g > 120 and b < 90:
+                    yellow_cnt += 1
+
+                if c_idx + 1 < w:
+                    nx = image_bgr[r_idx][c_idx + 1]
+                    if abs(g - int(nx[1])) > 35:
+                        edge_cnt += 1
+
+        entropy = 0.0
+        for count in gray_hist:
+            if count > 0:
+                p = count / total
+                entropy -= p * math.log2(p)
+
+        mean_sat = sum(sats) / total
+        std_sat = math.sqrt(sum((s - mean_sat) ** 2 for s in sats) / total)
+        mean_rg = sum(rg_diffs) / total
+        std_rg = math.sqrt(sum((d - mean_rg) ** 2 for d in rg_diffs) / total)
+
+        features[0] = round(min(1.0, max(0.0, green_cnt / total)), 4)
+        features[1] = round(min(1.0, max(0.0, brown_cnt / total)), 4)
+        features[2] = round(min(1.0, max(0.0, yellow_cnt / total)), 4)
+        features[3] = round(min(1.0, max(0.0, edge_cnt / total)), 4)
+        features[4] = round(min(1.0, max(0.0, entropy / 8.0)), 4)
+        features[5] = round(min(1.0, max(0.0, dark_cnt / total)), 4)
+        features[6] = round(min(1.0, max(0.0, std_sat / 128.0)), 4)
+        features[7] = round(min(1.0, max(0.0, std_rg / 64.0)), 4)
 
     return features
 
@@ -576,7 +646,7 @@ def rank_treatments(
 
 # # [ARRAY] # [HASH_TABLE] # [DECISION_TREE] # [PRIORITY_QUEUE]
 def run_dsa_pipeline(
-    image_bgr: np.ndarray,
+    image_bgr: Any,
     crop: str,
     pest_name: str,
     affected_area_pct: float,
