@@ -13,7 +13,7 @@
  *   Section 5: My Scans History, User Complaint Tracker (3-Step Progress & Admin Inbox),
  *              and 4-Stage Algorithm Pipeline Summary
  *   Section 6: Admin Portal (Complainant Identity View, Custom Response Messaging,
- *              and 18-Pest Hash Table Database Inspector)
+ *              and 24-Pest IP102 Hash Table Database Inspector)
  * ============================================================================
  */
 
@@ -25,6 +25,10 @@ import {
   UserComplaint,
   ALL_CROPS,
   PEST_DATABASE,
+  TOTAL_CROPS,
+  TOTAL_PESTS,
+  PESTS_PER_CROP,
+  TOTAL_TREATMENTS,
   runCompleteDetectionPipeline,
   classifySeverityDecisionTree,
   pestHashTable
@@ -44,16 +48,6 @@ import {
 
 const SAMPLE_LEAF_SPECIMENS = [
   {
-    id: 'spec_tomato',
-    title: 'Tomato Early Blight',
-    crop: 'Tomato' as CropType,
-    pestId: 'pest_8',
-    damagePercent: 42,
-    leafColor: '#15803d',
-    spotColor: '#451a03',
-    boxLabel: 'Alternaria Target Spot (96%)'
-  },
-  {
     id: 'spec_rice',
     title: 'Rice Brown Planthopper',
     crop: 'Rice' as CropType,
@@ -61,35 +55,45 @@ const SAMPLE_LEAF_SPECIMENS = [
     damagePercent: 28,
     leafColor: '#16a34a',
     spotColor: '#78350f',
-    boxLabel: 'Hopperburn Colony (95%)'
+    boxLabel: 'Brown Planthopper (95%)'
   },
   {
-    id: 'spec_cotton',
-    title: 'Cotton Pink Bollworm',
-    crop: 'Cotton' as CropType,
-    pestId: 'pest_6',
+    id: 'spec_maize',
+    title: 'Maize Asian Corn Borer',
+    crop: 'Maize' as CropType,
+    pestId: 'pest_4',
+    damagePercent: 42,
+    leafColor: '#15803d',
+    spotColor: '#451a03',
+    boxLabel: 'Asian Corn Borer (96%)'
+  },
+  {
+    id: 'spec_wheat',
+    title: 'Wheat English Grain Aphid',
+    crop: 'Wheat' as CropType,
+    pestId: 'pest_7',
     damagePercent: 22,
     leafColor: '#15803d',
     spotColor: '#27272a',
-    boxLabel: 'Bollworm Borehole (94%)'
+    boxLabel: 'English Grain Aphid (94%)'
   },
   {
-    id: 'spec_apple',
-    title: 'Apple Scab Lesion',
-    crop: 'Apple' as CropType,
-    pestId: 'pest_16',
+    id: 'spec_mango',
+    title: 'Mango Flat Beak Leafhopper',
+    crop: 'Mango' as CropType,
+    pestId: 'pest_22',
     damagePercent: 11,
     leafColor: '#166534',
     spotColor: '#3f6212',
-    boxLabel: 'Venturia Scab Patch (97%)'
+    boxLabel: 'Mango Leafhopper (97%)'
   }
 ];
 
 const INITIAL_HISTORY: ScanResult[] = [
-  runCompleteDetectionPipeline({ cropInput: 'Tomato', pestIdOverride: 'pest_8', affectedAreaPercent: 42, seed: 'init_1' }),
-  runCompleteDetectionPipeline({ cropInput: 'Rice', pestIdOverride: 'pest_1', affectedAreaPercent: 28, seed: 'init_2' }),
-  runCompleteDetectionPipeline({ cropInput: 'Cotton', pestIdOverride: 'pest_6', affectedAreaPercent: 22, seed: 'init_3' }),
-  runCompleteDetectionPipeline({ cropInput: 'Apple', pestIdOverride: 'pest_16', affectedAreaPercent: 11, seed: 'init_4' })
+  runCompleteDetectionPipeline({ cropInput: 'Rice', pestIdOverride: 'pest_1', affectedAreaPercent: 28, seed: 'init_1' }),
+  runCompleteDetectionPipeline({ cropInput: 'Maize', pestIdOverride: 'pest_4', affectedAreaPercent: 42, seed: 'init_2' }),
+  runCompleteDetectionPipeline({ cropInput: 'Wheat', pestIdOverride: 'pest_7', affectedAreaPercent: 22, seed: 'init_3' }),
+  runCompleteDetectionPipeline({ cropInput: 'Mango', pestIdOverride: 'pest_22', affectedAreaPercent: 11, seed: 'init_4' })
 ];
 
 // ----------------------------------------------------------------------------
@@ -117,11 +121,11 @@ const INITIAL_COMPLAINTS: UserComplaint[] = [
     id: 'TKT-102',
     userName: 'Dr. Ramesh Kumar',
     userEmail: 'ramesh.kumar@icar.gov.in',
-    crop: 'Tomato',
+    crop: 'Maize',
     category: 'Detection Issue',
     rating: 4,
-    subject: 'Lower shaded leaf with sooty mold flagged as Early Blight',
-    message: 'When scanning a shaded lower tomato leaf with dense whitefly honeydew, confidence dropped to 84%. Please advise on optimal lighting.',
+    subject: 'Lower shaded maize whorl leaf with frass flagged as Maize Armyworm',
+    message: 'When scanning a shaded maize leaf whorl with early corn borer shot-holes, confidence was 88%. Please advise on optimal lighting.',
     status: 'Pending Admin Action',
     createdAt: '2026-10-22 16:05:42'
   },
@@ -129,14 +133,14 @@ const INITIAL_COMPLAINTS: UserComplaint[] = [
     id: 'TKT-103',
     userName: 'Dr. Ramesh Kumar',
     userEmail: 'ramesh.kumar@icar.gov.in',
-    crop: 'Potato',
+    crop: 'Grapes',
     category: 'Treatment Feedback',
     rating: 5,
-    subject: 'Pre-harvest waiting period confirmation for Ridomil Gold',
-    message: 'Can we harvest potato tubers 14 days after applying Ridomil Gold 68 WG for Late Blight?',
+    subject: 'Pre-harvest waiting period confirmation for Tracer 45 SC on Grapes',
+    message: 'Can we harvest table grape clusters 7 days after applying Tracer 45 SC (Spinosad) for Grape Hornworm?',
     status: 'Resolved ✓',
     createdAt: '2026-10-20 09:40:10',
-    adminReply: 'Yes, the strict Pre-Harvest Interval (PHI) for Ridomil Gold 68 WG on Potato is 14 days. Ensure soil moisture is moderate before harvest.',
+    adminReply: 'Yes, the strict Pre-Harvest Interval (PHI) for Tracer 45 SC on Grapes is 7 days. Ensure thorough canopy drying before harvest.',
     repliedBy: 'PHANI NANDAN M S (Admin)',
     repliedAt: '2026-10-20 12:18:05'
   }
@@ -336,10 +340,13 @@ export default function App() {
   // --------------------------------------------------------------------------
   const [complaints, setComplaints] = useState<UserComplaint[]>(() => {
     try {
-      const saved = localStorage.getItem('smart_pest_complaints_v3');
+      const saved = localStorage.getItem('smart_pest_complaints_ip102_v1');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const valid = parsed.filter((c: UserComplaint) => ALL_CROPS.includes(c.crop));
+          if (valid.length > 0) return valid;
+        }
       }
     } catch {
       // Fallback to initial complaints if localStorage is unavailable
@@ -350,7 +357,7 @@ export default function App() {
   // Automatically sync updated complaints and admin replies to localStorage
   useEffect(() => {
     try {
-      localStorage.setItem('smart_pest_complaints_v3', JSON.stringify(complaints));
+      localStorage.setItem('smart_pest_complaints_ip102_v1', JSON.stringify(complaints));
     } catch {
       // Ignore storage quota errors
     }
@@ -358,6 +365,7 @@ export default function App() {
 
   // Filters for History & Admin Inspector
   const [historySearch, setHistorySearch] = useState('');
+  const [historyCropFilter, setHistoryCropFilter] = useState<string>('all');
   const [dbSearch, setDbSearch] = useState('');
   const [dbCropFilter, setDbCropFilter] = useState<string>('all');
 
@@ -370,7 +378,7 @@ export default function App() {
   // between 'My Complaints' and 'All Tickets', and per-ticket reply drafts
   // typed by the Admin inside the Admin Portal.
   // --------------------------------------------------------------------------
-  const [fbCrop, setFbCrop] = useState<CropType>('Tomato');
+  const [fbCrop, setFbCrop] = useState<CropType>('Rice');
   const [fbCategory, setFbCategory] = useState<UserComplaint['category']>('Detection Issue');
   const [fbRating, setFbRating] = useState<number>(5);
   const [fbSubject, setFbSubject] = useState('');
@@ -633,17 +641,31 @@ export default function App() {
             </div>
 
             <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-xl">
-              An enterprise-grade agricultural decision support system combining computer vision with four classical Data Structures: <strong>Feature Arrays</strong>, <strong>O(1) Hash Tables</strong>, <strong>Decision Trees</strong>, and <strong>Priority Queue Max-Heaps</strong>.
+              {TOTAL_CROPS} IP102 crops - {TOTAL_PESTS} common pests - {TOTAL_TREATMENTS} treatments. An agricultural decision support system combining computer vision with four classical Data Structures: <strong>Feature Arrays</strong>, <strong>O(1) Hash Tables</strong>, <strong>Decision Trees</strong>, and <strong>Priority Queue Max-Heaps</strong>.
             </p>
+
+            {/* Chip list of the 8 IP102 crops with per-crop pest count */}
+            <div className="flex flex-wrap gap-2">
+              {ALL_CROPS.map((crop) => (
+                <span
+                  key={crop}
+                  className="px-3 py-1 rounded-full bg-slate-900/90 border border-emerald-500/30 text-xs font-semibold text-slate-200 flex items-center gap-1.5"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <span>{crop}</span>
+                  <span className="font-mono text-emerald-400">({PESTS_PER_CROP[crop]} pests)</span>
+                </span>
+              ))}
+            </div>
 
             {/* 4 Key Architecture Highlights */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
               <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 backdrop-blur-md">
-                <div className="text-xl font-black text-emerald-400 font-mono">15 Crops</div>
-                <div className="text-xs text-slate-400 mt-0.5">Full CNN Support</div>
+                <div className="text-xl font-black text-emerald-400 font-mono">{TOTAL_CROPS} Crops</div>
+                <div className="text-xs text-slate-400 mt-0.5">IP102 Benchmark</div>
               </div>
               <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 backdrop-blur-md">
-                <div className="text-xl font-black text-cyan-400 font-mono">18 Pests</div>
+                <div className="text-xl font-black text-cyan-400 font-mono">{TOTAL_PESTS} Pests</div>
                 <div className="text-xs text-slate-400 mt-0.5">O(1) Hash Indexed</div>
               </div>
               <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 backdrop-blur-md">
@@ -970,8 +992,8 @@ export default function App() {
                   <span>SUPPORTED CROPS</span>
                   <Sprout className="w-4 h-4" />
                 </div>
-                <div className="text-3xl font-extrabold font-mono mt-2">15 Crops</div>
-                <div className="text-[11px] opacity-85 mt-1">Auto-CNN + Manual Selector</div>
+                <div className="text-3xl font-extrabold font-mono mt-2">{TOTAL_CROPS} Crops</div>
+                <div className="text-[11px] opacity-85 mt-1">IP102 Benchmark + Auto-CNN</div>
               </div>
 
               <div className="p-5 rounded-2xl bg-gradient-to-br from-cyan-600 to-blue-700 text-white shadow-lg shadow-cyan-600/15">
@@ -979,7 +1001,7 @@ export default function App() {
                   <span>HASH TABLE CATALOG</span>
                   <Database className="w-4 h-4" />
                 </div>
-                <div className="text-3xl font-extrabold font-mono mt-2">18 Pests</div>
+                <div className="text-3xl font-extrabold font-mono mt-2">{TOTAL_PESTS} Pests</div>
                 <div className="text-[11px] opacity-85 mt-1">O(1) Instant Bucket Lookup</div>
               </div>
 
@@ -1008,20 +1030,20 @@ export default function App() {
             {/* Scanner Control Bar */}
             <div className="rounded-2xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
               <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                {/* 15 Crops Dropdown */}
+                {/* 8 IP102 Crops Dropdown */}
                 <div className="md:col-span-5">
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                    1. Select Target Crop (15 Major Crops + Auto-CNN)
+                    1. Select Target Crop ({TOTAL_CROPS} IP102 Crops + Auto-CNN)
                   </label>
                   <select
                     value={selectedCrop}
                     onChange={(e) => setSelectedCrop(e.target.value as any)}
                     className="w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
-                    <option value="Auto-Detect">✦ Auto-Detect via CNN Feature Array</option>
+                    <option value="Auto-Detect">✦ Auto-Detect via CNN Feature Array ({TOTAL_CROPS} IP102 Crops)</option>
                     {ALL_CROPS.map((crop) => (
                       <option key={crop} value={crop}>
-                        {crop}
+                        {crop} ({PESTS_PER_CROP[crop]} pests)
                       </option>
                     ))}
                   </select>
@@ -1078,7 +1100,7 @@ export default function App() {
                 CONDITIONAL WORKSPACE:
                 - Before an image is uploaded (!hasScannedImage): Show useful
                   Interactive Leaf Upload Dropzone, 3-Step Workflow Guide, and
-                  15-Crop & 18-Pest Agricultural Reference Directory.
+                  8-Crop & 24-Pest IP102 Agricultural Reference Directory.
                 - Once an image is uploaded / scanned (hasScannedImage): Show
                   the 4-Stage Telemetry Bar, Computer Vision Detection Box, and
                   Priority Queue Ranked Treatments.
@@ -1110,7 +1132,7 @@ export default function App() {
                         Click to Upload Leaf Image (JPG, PNG, WEBP)
                       </span>
                       <span className="text-xs text-slate-500 block mt-0.5">
-                        Supports all 15 agricultural crops · Automatic CNN Feature Extraction
+                        Supports all {TOTAL_CROPS} IP102 agricultural crops · Automatic CNN Feature Extraction
                       </span>
                     </div>
                     <span className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-sm">
@@ -1153,19 +1175,19 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Right 6 Columns: Useful 15-Crop & 18-Pest Quick Reference Guide */}
+                {/* Right 6 Columns: Useful 8-Crop & 24-Pest Quick Reference Guide */}
                 <div className="lg:col-span-6 rounded-2xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4">
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 text-xs font-bold mb-2">
                         <Database className="w-3.5 h-3.5" />
-                        <span>Supported Crops & Pest Reference Guide</span>
+                        <span>Supported IP102 Crops & Pest Reference Guide</span>
                       </div>
                       <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">
-                        15 Major Crops & Key Symptoms Directory
+                        {TOTAL_CROPS} IP102 Crops & {TOTAL_PESTS} Common Pests Directory
                       </h3>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        Quick agricultural reference of supported crops, target pests, and top treatments. Click any row to run a sample scan immediately.
+                        Quick agricultural reference of supported IP102 crops, target pests, and top treatments. Click any row to run a sample scan immediately.
                       </p>
                     </div>
                   </div>
@@ -1500,16 +1522,31 @@ export default function App() {
               </div>
             </div>
 
-            {/* Search Filter */}
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search scan history by crop or pest name..."
-                value={historySearch}
-                onChange={(e) => setHistorySearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs"
-              />
+            {/* Search & Crop Filter */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search scan history by crop or pest name..."
+                  value={historySearch}
+                  onChange={(e) => setHistorySearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs"
+                />
+              </div>
+              <select
+                value={historyCropFilter}
+                onChange={(e) => setHistoryCropFilter(e.target.value)}
+                aria-label="Filter scan history by crop"
+                className="px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-semibold"
+              >
+                <option value="all">All {TOTAL_CROPS} IP102 Crops</option>
+                {ALL_CROPS.map((crop) => (
+                  <option key={crop} value={crop}>
+                    {crop} ({PESTS_PER_CROP[crop]} pests)
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Scans Table */}
@@ -1531,8 +1568,9 @@ export default function App() {
                     {scanHistory
                       .filter(
                         (s) =>
-                          s.crop.toLowerCase().includes(historySearch.toLowerCase()) ||
-                          s.detectedPest.toLowerCase().includes(historySearch.toLowerCase())
+                          (historyCropFilter === 'all' || s.crop === historyCropFilter) &&
+                          (s.crop.toLowerCase().includes(historySearch.toLowerCase()) ||
+                            s.detectedPest.toLowerCase().includes(historySearch.toLowerCase()))
                       )
                       .map((scan) => (
                         <tr key={scan.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
@@ -1944,7 +1982,7 @@ for (let i = 0; i < 8; i++) {
                   2. Hash Table Lookup (Constant-Time Pest Retrieval)
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                  <strong>Summary:</strong> Instead of scanning all 18 pest records sequentially, the crop key is passed into a Polynomial Rolling <strong>Hash Function</strong> to compute the exact bucket index in <strong>O(1) constant time</strong>.
+                  <strong>Summary:</strong> Instead of scanning all {TOTAL_PESTS} pest records sequentially, the crop key is passed into a Polynomial Rolling <strong>Hash Function</strong> to compute the exact bucket index in <strong>O(1) constant time</strong>.
                 </p>
                 <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 font-mono text-xs">
                   Key: "{currentScan.crop}" → Hash Bucket #{currentScan.hashBucket} → {currentScan.detectedPest}
@@ -2036,8 +2074,8 @@ treatments.sort((a, b) => b.score - a.score); // Highest Rank #1`}
               - Provides a direct Response Message Composer on every ticket so
                 the Admin can send or update a custom reply that appears inside
                 the complainant's account when they log in.
-              - Includes a searchable Hash Table Database Inspector for all 18
-                pests across 15 crops.
+              - Includes a searchable Hash Table Database Inspector for all 24
+                IP102 pests across 8 IP102 crops.
             ==================================================================== */}
         {activeTab === 'admin' && (
           <div className="space-y-6">
@@ -2067,7 +2105,7 @@ treatments.sort((a, b) => b.score - a.score); // Highest Rank #1`}
                       Project By: PHANI NANDAN M S , VEDHESHA PARTHIBAN , KHADGA LOHITH K , SHIVANI BALLANI
                     </h2>
                     <p className="text-xs text-slate-300">
-                      Manage farmer complaints with one-click resolution and inspect all 18 pests in the Hash Table.
+                      Manage farmer complaints with one-click resolution and inspect all {TOTAL_PESTS} pests across {TOTAL_CROPS} IP102 crops in the Hash Table.
                     </p>
                   </div>
                   <div className="flex gap-3 text-center font-mono">
@@ -2231,15 +2269,15 @@ treatments.sort((a, b) => b.score - a.score); // Highest Rank #1`}
                   </div>
                 </div>
 
-                {/* Searchable Hash Table Database Inspector (18 Pests & 15 Crops) */}
+                {/* Searchable Hash Table Database Inspector (All IP102 Pests & Crops) */}
                 <div className="rounded-2xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                       <h3 className="text-base font-extrabold">
-                        Hash Table Database Inspector (All 18 Pests & 15 Crops)
+                        Hash Table Database Inspector (All {TOTAL_PESTS} Pests & {TOTAL_CROPS} IP102 Crops)
                       </h3>
                       <p className="text-xs text-slate-500">
-                        Live view of Hash Bucket indices and treatment formulations.
+                        Live view of Hash Bucket indices, IP102 class names, and {TOTAL_TREATMENTS} treatment formulations.
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -2255,9 +2293,11 @@ treatments.sort((a, b) => b.score - a.score); // Highest Rank #1`}
                         onChange={(e) => setDbCropFilter(e.target.value)}
                         className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs"
                       >
-                        <option value="all">All 15 Crops</option>
+                        <option value="all">All {TOTAL_CROPS} IP102 Crops</option>
                         {ALL_CROPS.map((crop) => (
-                          <option key={crop} value={crop}>{crop}</option>
+                          <option key={crop} value={crop}>
+                            {crop} ({PESTS_PER_CROP[crop]} pests)
+                          </option>
                         ))}
                       </select>
                     </div>
@@ -2267,7 +2307,8 @@ treatments.sort((a, b) => b.score - a.score); // Highest Rank #1`}
                     {PEST_DATABASE.filter(
                       (p) =>
                         (dbCropFilter === 'all' || p.affectedCrops.includes(dbCropFilter as CropType)) &&
-                        p.commonName.toLowerCase().includes(dbSearch.toLowerCase())
+                        (p.commonName.toLowerCase().includes(dbSearch.toLowerCase()) ||
+                          p.ip102Class.toLowerCase().includes(dbSearch.toLowerCase()))
                     ).map((pest) => (
                       <div
                         key={pest.id}
@@ -2280,7 +2321,9 @@ treatments.sort((a, b) => b.score - a.score); // Highest Rank #1`}
                         <div className="font-extrabold text-slate-900 dark:text-white text-sm">
                           {pest.commonName}
                         </div>
-                        <div className="text-slate-400 italic text-[11px]">{pest.scientificName}</div>
+                        <div className="text-slate-400 italic text-[11px]">
+                          {pest.scientificName} · IP102: <span className="font-mono not-italic">{pest.ip102Class}</span>
+                        </div>
                         <div className="text-slate-600 dark:text-slate-300 text-[11px] pt-1">
                           Top Medicine: <strong>{pest.treatments[0]?.productName}</strong> (₹{pest.treatments[0]?.costPerAcreINR})
                         </div>

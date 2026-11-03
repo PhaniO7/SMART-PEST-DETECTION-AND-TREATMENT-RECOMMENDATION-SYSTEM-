@@ -56,10 +56,12 @@ app.post('/api/detect-pest', async (req, res) => {
     const prompt = `You are an expert Agronomical Vision AI Model for crop pest and leaf disease detection.
 Examine this crop leaf image.
 Crop hint provided by user: "${cropHint || 'Auto-Detect'}".
+Supported crops (IP102 dataset 8 crops only; note that Maize = Corn, Sugar Beet = Beet, Grapes = Vitis):
+"Rice" | "Maize" | "Wheat" | "Sugar Beet" | "Alfalfa" | "Grapes" | "Citrus" | "Mango".
 
 Analyze and return STRICT JSON with the following schema:
 {
-  "detectedCrop": "Rice" | "Maize" | "Wheat" | "Cotton" | "Tomato" | "Potato" | "Bell Pepper" | "Mango" | "Citrus" | "Grapes" | "Sugarcane" | "Soybean" | "Apple" | "Cabbage" | "Coffee",
+  "detectedCrop": "Rice" | "Maize" | "Wheat" | "Sugar Beet" | "Alfalfa" | "Grapes" | "Citrus" | "Mango",
   "pestCommonName": string,
   "pestScientificName": string,
   "confidence": number (between 0.85 and 0.99),

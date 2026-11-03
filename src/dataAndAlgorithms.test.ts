@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * UNIT TESTS FOR SIMPLIFIED 4-STAGE PIPELINE
+ * UNIT TESTS FOR SIMPLIFIED 4-STAGE PIPELINE & IP102 DATASET ALIGNMENT
  * Project By: PHANI NANDAN M S, VEDHESHA PARTHIBAN, KHADGA LOHITH K, SHIVANI BALLANI
  * ============================================================================
  */
@@ -13,12 +13,47 @@ import {
   classifySeverityDecisionTree,
   rankTreatmentsPriorityQueue,
   runCompleteDetectionPipeline,
-  PEST_DATABASE
+  ALL_CROPS,
+  PEST_DATABASE,
+  TOTAL_CROPS,
+  TOTAL_PESTS,
+  PESTS_PER_CROP,
+  TOTAL_TREATMENTS
 } from './dataAndAlgorithms.ts';
+
+// Summary: Test IP102 dataset alignment (8 crops, >= 3 pests per crop, no crops outside the 8)
+test('IP102 Dataset: has exactly 8 crops, at least 3 pests per crop, and no pest outside the 8 crops', () => {
+  assert.equal(ALL_CROPS.length, 8);
+  assert.equal(TOTAL_CROPS, 8);
+  assert.equal(TOTAL_PESTS, PEST_DATABASE.length);
+  assert.equal(
+    TOTAL_TREATMENTS,
+    PEST_DATABASE.reduce((sum, p) => sum + p.treatments.length, 0)
+  );
+
+  // Every one of the 8 IP102 crops must have at least 3 common pests
+  for (const crop of ALL_CROPS) {
+    assert.ok(
+      PESTS_PER_CROP[crop] >= 3,
+      `Expected ${crop} to have at least 3 pests, got ${PESTS_PER_CROP[crop]}`
+    );
+  }
+
+  // Every pest must have a valid ip102Class and only reference crops within ALL_CROPS
+  for (const pest of PEST_DATABASE) {
+    assert.ok(pest.ip102Class && pest.ip102Class.trim().length > 0);
+    for (const crop of pest.affectedCrops) {
+      assert.ok(
+        ALL_CROPS.includes(crop),
+        `Pest ${pest.commonName} references crop ${crop} outside the 8 IP102 crops`
+      );
+    }
+  }
+});
 
 // Summary: Test Stage 1 - Feature Array returns 8 normalized numbers
 test('Stage 1 (Feature Array): extracts 8 normalized feature values', () => {
-  const arr = extractFeatureArray('Tomato_Leaf_Sample');
+  const arr = extractFeatureArray('Rice_Leaf_Sample');
   assert.equal(arr.length, 8);
   assert.ok(arr.every((val) => val >= 0.1 && val <= 1.0));
 });
@@ -26,8 +61,10 @@ test('Stage 1 (Feature Array): extracts 8 normalized feature values', () => {
 // Summary: Test Stage 2 - Hash Table O(1) lookup finds pests for a crop
 test('Stage 2 (Hash Table): O(1) lookup retrieves matching pests and bucket index', () => {
   const result = pestHashTable.lookupByCrop('Rice');
-  assert.ok(result.pests.length >= 1);
+  assert.ok(result.pests.length >= 3);
   assert.equal(result.pests[0].commonName, 'Brown Planthopper');
+  assert.equal(result.pests[0].ip102Class, 'brown plant hopper');
+  assert.equal(result.bucketIndex, 16);
   assert.ok(result.bucketIndex >= 0 && result.bucketIndex < 31);
 });
 
@@ -50,10 +87,10 @@ test('Stage 4 (Priority Queue): ranks treatments from highest score to lowest', 
 // Summary: Test complete end-to-end pipeline
 test('Complete Pipeline: executes all 4 stages and returns a structured ScanResult', () => {
   const scan = runCompleteDetectionPipeline({
-    cropInput: 'Tomato',
+    cropInput: 'Rice',
     affectedAreaPercent: 42
   });
-  assert.equal(scan.crop, 'Tomato');
+  assert.equal(scan.crop, 'Rice');
   assert.equal(scan.severity, 'Severe');
   assert.ok(scan.rankedTreatments.length > 0);
 });
