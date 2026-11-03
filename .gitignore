@@ -1,20 +1,25 @@
-# Python bytecode and virtual environments
-__pycache__/
-*.py[cod]
-.pytest_cache/
-.venv/
-venv/
+# ============================================================================
+# GIT IGNORE CONFIGURATION
+# Project: Smart Pest Detection and Treatment Recommendation System
+# Author : Phani Nandan M S
+#          Vedhesha Parthiban
+#          Shivani Ballani
+#          Khadga Lohith K
+# ============================================================================
 
-# Local SQLite database, uploaded scan images, and large datasets/weights
-*.db
-uploads/
-datasets/
-ip102_v1.1/
-models/*.pt
-models/yolo_runs/
+# Step 1: Ignore installed dependencies and build output folders
+node_modules/
+build/
+dist/
+coverage/
 
-# OS and editor files
+# Step 2: Ignore operating system and editor temporary files
 .DS_Store
 *.log
-.env*
 .aistudio/
+public/assets/aistudio/
+bun.lock
+
+# Step 3: Ignore private local environment variables (keep .env.example)
+.env*
+!.env.example

@@ -35,37 +35,14 @@ PROJECT_TEAM = (
     "PHANI NANDAN M S , VEDHESHA PARTHIBAN , KHADGA LOHITH K , SHIVANI BALLANI"
 )  # # [CHANGE_HERE] Edit team member names here
 
-# # [CONFIG] # [LOGIN] Quick-access demo accounts (including the admin account)
-# may ONLY appear when DEMO_MODE = True.
-# IMPORTANT: DEMO_MODE must be False when the project is shown or shared!
-DEMO_MODE = False  # # [CHANGE_HERE] Keep False when showing or sharing the project
-
-# # [CONFIG] # [ADMIN] # [LOGIN] Read comma-separated admin emails from the
-# environment variable PEST_ADMIN_EMAILS (set in terminal before running:
-#   Windows PowerShell: $env:PEST_ADMIN_EMAILS="your_admin@domain.com"
-#   Linux / macOS:      export PEST_ADMIN_EMAILS="your_admin@domain.com"
-# ). Falls back to a safe placeholder default if not set.
+# # [CONFIG] # [ADMIN] # [LOGIN] Emails that automatically get the "admin" role
 ADMIN_EMAILS = [
-    email.strip().lower()
-    for email in os.environ.get("PEST_ADMIN_EMAILS", "admin@example.com").split(",")
-    if email.strip()
-]  # # [CHANGE_HERE] Set PEST_ADMIN_EMAILS in your environment variables
+    "phaninandan78@gmail.com",
+    "admin@pestsystem.edu",
+]  # # [CHANGE_HERE] Add or change admin email addresses here
 
-# # [CONFIG] # [LOGIN] Read the password hashing salt from the environment
-# variable PEST_PASSWORD_SALT (set in terminal before running:
-#   Windows PowerShell: $env:PEST_PASSWORD_SALT="your_random_secret_salt"
-#   Linux / macOS:      export PEST_PASSWORD_SALT="your_random_secret_salt"
-# ). Falls back to a safe placeholder default if not set.
-PASSWORD_HASH_SALT = os.environ.get(
-    "PEST_PASSWORD_SALT", "change_this_placeholder_salt_in_env"
-)  # # [CHANGE_HERE] Set PEST_PASSWORD_SALT in your environment variables
-
-# # [CONFIG] # [LOGIN] Safe demo account credentials used ONLY when DEMO_MODE = True
-DEMO_ADMIN_EMAIL = "admin@example.com"  # # [CHANGE_HERE] Placeholder demo admin email
-DEMO_USER_EMAIL = "farmer@example.com"  # # [CHANGE_HERE] Placeholder demo farmer email
-DEMO_DEFAULT_PASSWORD = os.environ.get(
-    "PEST_DEMO_PASSWORD", "DemoPass#2026"
-)  # # [CHANGE_HERE] Used only when DEMO_MODE = True
+# # [CONFIG] # [LOGIN] Salt string used with Python's standard library hashlib
+PASSWORD_HASH_SALT = "btech_aids_ip102_pest_salt_2026"  # # [CHANGE_HERE] Change password salt string
 
 # # [CONFIG] # [LOGIN] Number of PBKDF2-HMAC-SHA256 iterations for password hashing
 PASSWORD_HASH_ITERATIONS = 100_000  # # [CHANGE_HERE] Increase or decrease hash iterations
