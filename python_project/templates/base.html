@@ -1,0 +1,136 @@
+{#
+================================================================================
+FILE: templates/base.html
+PURPOSE:
+    Master Jinja2 layout template shared by every page in the Flask application.
+    Displays:
+      - Project header with official title and Project By team names:
+        PHANI NANDAN M S , VEDHESHA PARTHIBAN , KHADGA LOHITH K , SHIVANI BALLANI
+      - Navigation bar for Scanner, Scan History, 4-Stage DSA Guide, Feedback &
+        Complaints (with live reply badge), and Admin Portal (for admins).
+      - Light/Dark mode toggle button (persisted in localStorage).
+      - Flash notification banners and main content block.
+================================================================================
+#}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ PROJECT_TITLE }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <!-- Top Academic & Team Attribution Banner -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="brand-block">
+        <div class="brand-badge">B.Tech AI &amp; DS • 5th Sem Design Project • IP102 Dataset</div>
+        <h1 class="site-title">{{ PROJECT_TITLE }}</h1>
+        <p class="project-by-line">
+          <strong>Project By:</strong> {{ PROJECT_BY }}
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <!-- Light / Dark Theme Toggle Button -->
+        <button type="button" id="themeToggleBtn" class="btn btn-outline btn-sm" onclick="toggleTheme()">
+          Light / Dark Mode
+        </button>
+
+        {% if current_user.is_authenticated %}
+          <div class="user-pill">
+            <span class="user-name">{{ current_user.name }}</span>
+            <span class="role-badge {% if current_user.is_admin %}role-admin{% else %}role-user{% endif %}">
+              {{ current_user.role | upper }}
+            </span>
+            <a href="{{ url_for('auth.logout') }}" class="btn btn-danger btn-sm">Sign Out</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if current_user.is_authenticated %}
+      <nav class="main-nav">
+        <div class="container nav-links">
+          <a href="{{ url_for('scanner_page') }}"
+             class="nav-link {% if request.endpoint == 'scanner_page' %}active{% endif %}">
+            Leaf Scanner (CNN + YOLOv8)
+          </a>
+          <a href="{{ url_for('dsa_guide_page') }}"
+             class="nav-link {% if request.endpoint == 'dsa_guide_page' %}active{% endif %}">
+            4-Stage DSA Guide
+          </a>
+          <a href="{{ url_for('history_page') }}"
+             class="nav-link {% if request.endpoint == 'history_page' %}active{% endif %}">
+            Scan History
+          </a>
+          <a href="{{ url_for('feedback_page') }}"
+             class="nav-link {% if request.endpoint == 'feedback_page' %}active{% endif %}">
+            Feedback &amp; Complaints
+            {% if user_replies_count > 0 %}
+              <span class="badge-pill badge-success">{{ user_replies_count }} Reply</span>
+            {% elif user_tickets_count > 0 %}
+              <span class="badge-pill">{{ user_tickets_count }}</span>
+            {% endif %}
+          </a>
+          {% if current_user.is_admin %}
+            <a href="{{ url_for('admin_page') }}"
+               class="nav-link {% if request.endpoint == 'admin_page' %}active{% endif %}">
+              Admin Portal
+              {% if pending_admin_count > 0 %}
+                <span class="badge-pill badge-warning">{{ pending_admin_count }} Pending</span>
+              {% endif %}
+            </a>
+          {% endif %}
+        </div>
+      </nav>
+    {% endif %}
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="container main-container">
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-list">
+          {% for category, message in messages %}
+            <div class="flash-item flash-{{ category }}">
+              <span>{{ message }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>
+        <strong>{{ PROJECT_TITLE }}</strong>
+        <div class="text-muted">Project By: {{ PROJECT_BY }}</div>
+      </div>
+      <div class="text-muted">
+        100% Python Stack • Flask • PyTorch CNN • Ultralytics YOLOv8 • OpenCV • 4-Stage DSA Pipeline
+      </div>
+    </div>
+  </footer>
+
+  <!-- Minimal Vanilla JS for Light/Dark Theme Persistence Only -->
+  <script>
+    (function () {
+      var saved = localStorage.getItem('pest_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', saved);
+    })();
+    function toggleTheme() {
+      var current = document.documentElement.getAttribute('data-theme') || 'dark';
+      var next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('pest_theme', next);
+    }
+  </script>
+</body>
+</html>

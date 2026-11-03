@@ -1,0 +1,30 @@
+# ==============================================================================
+# FILE: requirements.txt
+# PURPOSE: Lists all Python packages required to run the Flask web application,
+#          SQLite database, PyTorch CNN model, Ultralytics YOLOv8 detector,
+#          OpenCV image processing pipeline, and pytest unit test suite.
+# HOW TO USE: Run `pip install -r requirements.txt` in your terminal or Colab.
+# ==============================================================================
+
+# --- Web Framework, Database & Authentication ---
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+Flask-Login==0.6.3
+Werkzeug==3.0.4
+
+# --- Deep Learning & Computer Vision (Real CNN + YOLOv8) ---
+torch>=2.2.0
+torchvision>=0.17.0
+ultralytics>=8.2.0
+opencv-python-headless>=4.9.0.80
+numpy>=1.26.0
+Pillow>=10.3.0
+
+# --- Dataset Preparation, Metrics & Evaluation Plots ---
+scikit-learn>=1.4.2
+matplotlib>=3.8.4
+pandas>=2.2.2
+PyYAML>=6.0.1
+
+# --- Automated Unit Testing ---
+pytest>=8.2.0

@@ -1,0 +1,133 @@
+{#
+================================================================================
+FILE: templates/feedback.html
+PURPOSE:
+    Allows users to submit detection/treatment complaints or suggestions,
+    track each complaint with a 3-step live progress bar, and read official
+    response messages sent by the Admin.
+    (# [FEEDBACK], # [DATABASE], # [ADMIN])
+================================================================================
+#}
+{% extends "base.html" %}
+{% block content %}
+<div class="grid-2">
+  <!-- Left Card: Submit New Complaint / Feedback -->
+  <section class="card">
+    <span class="section-tag"># [FEEDBACK] • Submit New Ticket</span>
+    <h2>Submit Complaint or Agronomic Feedback</h2>
+    <p class="text-muted">
+      Logged in as <strong>{{ current_user.name }}</strong> (<code>{{ current_user.email }}</code>). Your name, email, and timestamp are attached automatically so the Admin can reply directly to your account.
+    </p>
+
+    <form method="POST" action="{{ url_for('feedback_page') }}" class="form-stack">
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="fb_crop">Affected Crop</label>
+          <select id="fb_crop" name="crop">
+            {% for crop in crops_list %}
+              <option value="{{ crop }}">{{ crop }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="fb_category">Category</label>
+          <select id="fb_category" name="category">
+            <option value="Detection Issue">Detection Issue</option>
+            <option value="Treatment Feedback">Treatment Feedback</option>
+            <option value="Dosage / PHI Question">Dosage / PHI Question</option>
+            <option value="New Pest Request">New Pest Request</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="fb_rating">Satisfaction Rating (1 to 5)</label>
+        <select id="fb_rating" name="rating">
+          <option value="5">5 — Excellent</option>
+          <option value="4">4 — Good</option>
+          <option value="3">3 — Average</option>
+          <option value="2">2 — Needs Improvement</option>
+          <option value="1">1 — Critical Issue</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="fb_subject">Complaint / Feedback Subject</label>
+        <input id="fb_subject" type="text" name="subject" required placeholder="Brief summary of your issue or question" />
+      </div>
+
+      <div class="form-group">
+        <label for="fb_message">Detailed Description</label>
+        <textarea id="fb_message" name="message" rows="4" required placeholder="Describe the crop symptoms, lighting conditions, or treatment question..."></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block">Submit Ticket for Admin Review</button>
+    </form>
+  </section>
+
+  <!-- Right Card: Live Complaint Tracker & Admin Replies -->
+  <section class="card">
+    <div class="flex-between">
+      <div>
+        <span class="section-tag"># [FEEDBACK] # [ADMIN] • Live Status &amp; Admin Replies</span>
+        <h2>My Complaint Tracker</h2>
+      </div>
+      <div class="flex-gap">
+        <a href="{{ url_for('feedback_page', filter='my') }}"
+           class="btn btn-sm {% if view_filter == 'my' %}btn-primary{% else %}btn-outline{% endif %}">
+          My Complaints ({{ my_tickets_count }})
+        </a>
+        <a href="{{ url_for('feedback_page', filter='all') }}"
+           class="btn btn-sm {% if view_filter == 'all' %}btn-primary{% else %}btn-outline{% endif %}">
+          All Community Tickets ({{ all_tickets_count }})
+        </a>
+      </div>
+    </div>
+
+    {% if tickets %}
+      <div class="ticket-stack mt-1">
+        {% for t in tickets %}
+          <div class="ticket-card">
+            <div class="flex-between">
+              <div>
+                <span class="badge-pill">#TKT-{{ t.id }}</span>
+                <strong>{{ t.subject }}</strong>
+              </div>
+              <span class="badge-pill {% if t.admin_reply %}badge-success{% else %}badge-warning{% endif %}">
+                {{ t.status }}
+              </span>
+            </div>
+
+            <div class="text-muted small-text mt-half">
+              Submitted by <strong>{{ t.user_name }}</strong> ({{ t.user_email }}) on <strong>{{ t.created_at }}</strong> • Crop: <strong>{{ t.crop }}</strong> • Category: {{ t.category }}
+            </div>
+
+            <p class="ticket-msg">{{ t.message }}</p>
+
+            <!-- 3-Step Complaint Tracking Progress Bar -->
+            <div class="tracker-steps">
+              <div class="tracker-step step-done">1. Submitted ({{ t.created_at }})</div>
+              <div class="tracker-step step-done">2. Under Admin Review</div>
+              <div class="tracker-step {% if t.admin_reply %}step-done{% endif %}">
+                3. {% if t.admin_reply %}Admin Responded ✓{% else %}Awaiting Response{% endif %}
+              </div>
+            </div>
+
+            {% if t.admin_reply %}
+              <div class="admin-reply-box">
+                <div class="reply-header">
+                  <strong>Official Response from {{ t.replied_by }}</strong>
+                  <span>Replied on: {{ t.replied_at }}</span>
+                </div>
+                <p class="mb-0">{{ t.admin_reply }}</p>
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted mt-1">No complaints submitted under this filter yet.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

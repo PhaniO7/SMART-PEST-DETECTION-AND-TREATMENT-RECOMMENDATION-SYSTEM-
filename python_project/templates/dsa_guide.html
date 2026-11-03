@@ -1,0 +1,139 @@
+{#
+================================================================================
+FILE: templates/dsa_guide.html
+PURPOSE:
+    Displays the 4 Data Structure & Algorithm (DSA) stages implemented in
+    `dsa_pipeline.py`, populated with the REAL values from the user's last scan:
+      - Stage 1: Fixed-Size 8-Element Normalized Feature Array
+      - Stage 2: 31-Bucket Hash Table with Polynomial Rolling Hash & Chaining
+      - Stage 3: Binary Decision Tree Severity Classifier (with interactive tester)
+      - Stage 4: Manual Binary Max-Heap Priority Queue Treatment Ranking
+    (# [ARRAY], # [HASH_TABLE], # [DECISION_TREE], # [PRIORITY_QUEUE])
+================================================================================
+#}
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <span class="section-tag"># [ARRAY] # [HASH_TABLE] # [DECISION_TREE] # [PRIORITY_QUEUE]</span>
+  <h2>4-Stage Data Structures &amp; Algorithms (DSA) Pipeline</h2>
+  <p class="text-muted mb-0">
+    All 4 stages are implemented from scratch in <code>dsa_pipeline.py</code> without built-in <code>dict</code> for the hash table and without <code>heapq</code> for the priority queue.
+    {% if last_scan %}
+      Showing live values from your most recent scan: <strong>SCAN-{{ last_scan.id }} ({{ last_scan.crop }} — {{ last_scan.detected_pest }} at {{ last_scan.created_at }})</strong>.
+    {% else %}
+      No scan performed yet — upload a leaf photo on the <a href="{{ url_for('scanner_page') }}">Scanner</a> page to populate live scan values.
+    {% endif %}
+  </p>
+</section>
+
+<div class="grid-2">
+  <!-- STAGE 1: 8-ELEMENT FEATURE ARRAY -->
+  <section class="card">
+    <span class="section-tag"># [ARRAY] • Stage 1 • Time: O(H &times; W) • Space: O(1)</span>
+    <h3>Stage 1: Fixed-Size 8-Element Feature Array</h3>
+    <p class="text-muted">
+      Pre-allocates a contiguous 8-slot array <code>[0.0] * 8</code> and populates normalized visual biomarkers in <code>[0.0, 1.0]</code> from OpenCV HSV, Lab, and Canny Edge matrices.
+    </p>
+    <div class="feature-grid">
+      {% set arr = last_scan.feature_array if last_scan else [0.54, 0.18, 0.12, 0.09, 0.63, 0.05, 0.28, 0.41] %}
+      {% for idx in range(8) %}
+        <div class="feature-box">
+          <span class="feature-idx">Index [{{ idx }}] — O(1)</span>
+          <strong>{{ feature_names[idx] }}</strong>
+          <span class="feature-val">{{ arr[idx] }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- STAGE 3: BINARY DECISION TREE SEVERITY CLASSIFIER -->
+  <section class="card">
+    <span class="section-tag"># [DECISION_TREE] • Stage 3 • Time: O(H) = O(1) • Space: O(1)</span>
+    <h3>Stage 3: Binary Decision Tree Severity Classifier</h3>
+    <p class="text-muted">
+      Evaluates YOLOv8 affected leaf area % against thresholds: <code>&lt; {{ config.SEVERITY_LOW_MAX_PERCENT }}% Low</code>, <code>{{ config.SEVERITY_LOW_MAX_PERCENT }}–{{ config.SEVERITY_MODERATE_MAX_PERCENT }}% Moderate</code>, <code>&gt; {{ config.SEVERITY_MODERATE_MAX_PERCENT }}% Severe</code>.
+    </p>
+
+    {% if last_scan %}
+      <div class="info-box">
+        <div><strong>Last Scan Affected Area:</strong> {{ last_scan.affected_area_percent }}%</div>
+        <div><strong>Classified Severity:</strong> <span class="severity-{{ last_scan.severity | lower }}">{{ last_scan.severity }}</span></div>
+        <div><strong>Decision Rule Triggered:</strong> {{ last_scan.decision_rule }}</div>
+      </div>
+    {% endif %}
+
+    <form method="GET" action="{{ url_for('dsa_guide_page') }}" class="flex-gap mt-1">
+      <label for="test_area_input"><strong>Test Decision Tree with Area %:</strong></label>
+      <input id="test_area_input" type="number" step="0.5" min="0" max="100" name="test_area" value="{{ test_area }}" />
+      <button type="submit" class="btn btn-primary btn-sm">Evaluate Tree</button>
+    </form>
+
+    <div class="info-box mt-half">
+      <div><strong>Simulated Area:</strong> {{ test_area }}% &rarr; <strong>{{ tree_sim.severity }}</strong></div>
+      <div><strong>Path Traversed:</strong> {{ tree_sim.decision_path | join(' → ') }}</div>
+      <div><strong>Strategy:</strong> {{ tree_sim.strategy }}</div>
+    </div>
+  </section>
+</div>
+
+<!-- STAGE 4: MANUAL BINARY MAX-HEAP PRIORITY QUEUE -->
+<section class="card mt-1">
+  <span class="section-tag"># [PRIORITY_QUEUE] • Stage 4 • Time: O(T log T) • Space: O(T)</span>
+  <h3>Stage 4: Manual Binary Max-Heap Priority Queue (No <code>heapq</code>)</h3>
+  <p class="text-muted">
+    Computes composite priority score <code>(0.50 &times; Efficacy) + (0.30 &times; PHI_Safety) + (0.20 &times; Cost_Efficiency) + Severity_Bonus</code>, inserts each treatment with <code>_sift_up</code>, and extracts Rank #1..#K with <code>_sift_down</code>.
+  </p>
+
+  {% if last_scan and last_scan.ranked_treatments %}
+    <div class="grid-3">
+      {% for tx in last_scan.ranked_treatments %}
+        <div class="treatment-card {% if tx.rank == 1 %}treatment-rank-1{% endif %}">
+          <div class="treatment-header">
+            <span class="rank-badge">Heap Pop #{{ tx.rank }}</span>
+            <span class="type-badge">{{ tx.type }}</span>
+            <span class="score-badge">Score: {{ tx.priority_score }}</span>
+          </div>
+          <h4>{{ tx.name }}</h4>
+          <p class="small-text text-muted">
+            Efficacy: {{ tx.efficacy_percent }}% • PHI: {{ tx.phi_days }}d • Cost: ₹{{ tx.cost_per_acre_inr }}/acre
+          </p>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-muted">Perform a leaf scan to view the live Max-Heap Priority Queue extraction order from your scan.</p>
+  {% endif %}
+</section>
+
+<!-- STAGE 2: 31-BUCKET POLYNOMIAL ROLLING HASH TABLE -->
+<section class="card mt-1">
+  <span class="section-tag"># [HASH_TABLE] • Stage 2 • Time: O(L) Avg Lookup • Space: O(B + N)</span>
+  <h3>Stage 2: Custom 31-Bucket Hash Table (Polynomial Rolling Hash + Separate Chaining)</h3>
+  <p class="text-muted">
+    Hash Function: <code>H(key) = (&Sigma; ord(char[i]) &times; 31^i) mod 31</code>. Collisions are resolved via singly linked list nodes (<code>HashNode</code>).
+    {% if last_scan %}
+      Last scan key <code>{{ last_scan.hash_key_used }}</code> hashed to <strong>Bucket #{{ last_scan.hash_bucket_index }}</strong>.
+    {% endif %}
+  </p>
+
+  <div class="bucket-grid">
+    {% for b in hash_buckets %}
+      <div class="bucket-card {% if last_scan and last_scan.hash_bucket_index == b.bucket_index %}bucket-active{% endif %}">
+        <div class="bucket-header">
+          <strong>Bucket #{{ b.bucket_index }}</strong>
+          <span class="badge-pill">{{ b.chain_length }} node(s)</span>
+        </div>
+        {% if b.keys %}
+          <ul class="bucket-keys">
+            {% for k in b.keys %}
+              <li><code>{{ k }}</code></li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <span class="text-muted small-text">Empty (None)</span>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

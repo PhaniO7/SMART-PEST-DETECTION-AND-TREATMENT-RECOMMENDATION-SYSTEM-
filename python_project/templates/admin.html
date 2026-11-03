@@ -1,0 +1,199 @@
+{#
+================================================================================
+FILE: templates/admin.html
+PURPOSE:
+    Admin Portal restricted to verified Project Administrators (`role == "admin"`).
+    Displays:
+      1. Top-level KPI cards (Total Users, Total Scans, Mean Model Confidence,
+         CNN/YOLOv8 Agreement Rate, and Pending Complaints).
+      2. User Feedback & Complaint Inbox showing complainant Name, Email, Date &
+         Time, Crop, Category, and a Direct Response Composer that sends an
+         official Admin reply visible in the user's account when they log in.
+      3. Pest-Frequency Distribution Chart & Model Confidence Statistics.
+      4. All Registered Users & Admins Table.
+      5. All System Scans Table.
+    (# [ADMIN], # [FEEDBACK], # [DATABASE])
+================================================================================
+#}
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <span class="section-tag"># [ADMIN] • Project Administrator Command Center</span>
+  <h2>System Telemetry, Model Confidence Stats &amp; Complaint Response Portal</h2>
+  <div class="metrics-strip">
+    <div class="metric-card">
+      <span class="metric-label">Registered Users</span>
+      <span class="metric-value">{{ all_users | length }}</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-label">Total Leaf Scans</span>
+      <span class="metric-value">{{ all_scans | length }}</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-label">Mean Confidence</span>
+      <span class="metric-value">{{ confidence_stats.mean }}%</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-label">CNN + YOLO Agreement</span>
+      <span class="metric-value">{{ confidence_stats.agreement_rate }}%</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-label">Complaint Tickets</span>
+      <span class="metric-value">{{ all_tickets | length }}</span>
+    </div>
+  </div>
+</section>
+
+<!-- 1. ADMIN COMPLAINT INBOX & DIRECT RESPONSE MESSAGING -->
+<section class="card mt-1">
+  <span class="section-tag"># [ADMIN] # [FEEDBACK] • Complainant Identity, Timestamp &amp; Direct Response</span>
+  <h3>User Complaints &amp; Agronomic Support Inbox</h3>
+  <p class="text-muted">
+    Inspect who submitted each complaint (Full Name, Email Address, Date &amp; Time) and send an official response message directly to their account.
+  </p>
+
+  <div class="ticket-stack">
+    {% for t in all_tickets %}
+      <div class="ticket-card">
+        <div class="flex-between">
+          <div>
+            <span class="badge-pill">#TKT-{{ t.id }}</span>
+            <strong>{{ t.subject }}</strong>
+            <span class="badge-pill">{{ t.crop }} • {{ t.category }}</span>
+          </div>
+          <span class="badge-pill {% if t.admin_reply %}badge-success{% else %}badge-warning{% endif %}">
+            {{ t.status }}
+          </span>
+        </div>
+
+        <div class="complainant-meta mt-half">
+          <span><strong>Complainant Name:</strong> {{ t.user_name }}</span>
+          <span><strong>Email:</strong> <code>{{ t.user_email }}</code></span>
+          <span><strong>Date &amp; Time:</strong> {{ t.created_at }}</span>
+          <span><strong>Rating:</strong> {{ t.rating }}/5</span>
+        </div>
+
+        <p class="ticket-msg">{{ t.message }}</p>
+
+        {% if t.admin_reply %}
+          <div class="admin-reply-box">
+            <div class="reply-header">
+              <strong>Sent by {{ t.replied_by }}</strong>
+              <span>{{ t.replied_at }}</span>
+            </div>
+            <p class="mb-0">{{ t.admin_reply }}</p>
+          </div>
+        {% endif %}
+
+        <!-- Admin Direct Response Form -->
+        <form method="POST" action="{{ url_for('admin_reply_ticket', ticket_id=t.id) }}" class="reply-form mt-half">
+          <input type="text" name="admin_reply"
+                 value="{{ t.admin_reply or '' }}"
+                 placeholder="Write official response to {{ t.user_name }} ({{ t.user_email }})..." required />
+          <button type="submit" class="btn btn-primary btn-sm">
+            {% if t.admin_reply %}Update Response{% else %}Send Response &amp; Resolve{% endif %}
+          </button>
+        </form>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- 2. PEST FREQUENCY CHART & MODEL CONFIDENCE STATS -->
+<div class="grid-2 mt-1">
+  <section class="card">
+    <span class="section-tag"># [ADMIN] # [CNN] # [YOLO] • Pest-Frequency Distribution</span>
+    <h3>Detected Pest Frequency Across All Scans</h3>
+    {% if pest_frequency_stats %}
+      <div class="top3-list">
+        {% for item in pest_frequency_stats %}
+          <div class="top3-item">
+            <div class="top3-label">
+              <span><strong>{{ item.pest_name }}</strong></span>
+              <span>{{ item.count }} scan(s) ({{ item.percent }}%)</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" style="width: {{ item.percent }}%;"></div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted">No scans recorded yet.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <span class="section-tag"># [ADMIN] # [DATABASE] • Registered Accounts</span>
+    <h3>All Registered Users &amp; Administrators</h3>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Full Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Joined At</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in all_users %}
+            <tr>
+              <td>#{{ u.id }}</td>
+              <td><strong>{{ u.name }}</strong></td>
+              <td><code>{{ u.email }}</code></td>
+              <td>
+                <span class="role-badge {% if u.is_admin %}role-admin{% else %}role-user{% endif %}">
+                  {{ u.role | upper }}
+                </span>
+              </td>
+              <td>{{ u.created_at }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<!-- 3. ALL SYSTEM SCANS LOG -->
+<section class="card mt-1">
+  <span class="section-tag"># [ADMIN] # [DATABASE] • Global Scan Telemetry</span>
+  <h3>All User Scans ({{ all_scans | length }})</h3>
+  {% if all_scans %}
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Scan ID</th>
+            <th>User</th>
+            <th>Timestamp</th>
+            <th>Crop</th>
+            <th>Detected Pest</th>
+            <th>Confidence</th>
+            <th>Affected Area</th>
+            <th>Severity</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in all_scans %}
+            <tr>
+              <td><code>SCAN-{{ s.id }}</code></td>
+              <td>{{ s.user_name }} (<code>{{ s.user_email }}</code>)</td>
+              <td>{{ s.created_at }}</td>
+              <td>{{ s.crop }}</td>
+              <td><strong>{{ s.detected_pest }}</strong></td>
+              <td>{{ s.fused_confidence_percent }}%</td>
+              <td>{{ s.affected_area_percent }}%</td>
+              <td><span class="severity-{{ s.severity | lower }}">{{ s.severity }}</span></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-muted">No scans have been performed yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

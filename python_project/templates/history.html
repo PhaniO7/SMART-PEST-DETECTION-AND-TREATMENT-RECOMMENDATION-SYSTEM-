@@ -1,0 +1,83 @@
+{#
+================================================================================
+FILE: templates/history.html
+PURPOSE:
+    Displays the logged-in user's historical leaf scans stored in SQLite
+    (`scan_records` table), with keyword search and CSV export.
+    (# [DATABASE], # [API_ROUTE])
+================================================================================
+#}
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <div class="flex-between">
+    <div>
+      <span class="section-tag"># [DATABASE] • SQLite Per-User Scan History</span>
+      <h2>My Leaf Scan History ({{ scans | length }} Records)</h2>
+    </div>
+    <div class="flex-gap">
+      <form method="GET" action="{{ url_for('history_page') }}" class="flex-gap">
+        <input type="text" name="q" value="{{ search_query }}" placeholder="Search crop, pest, or severity..." />
+        <button type="submit" class="btn btn-outline">Filter</button>
+      </form>
+      <a href="{{ url_for('export_history_csv') }}" class="btn btn-primary">Export CSV</a>
+    </div>
+  </div>
+
+  {% if scans %}
+    <div class="table-responsive mt-1">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Scan ID</th>
+            <th>Date &amp; Time</th>
+            <th>Annotated Image</th>
+            <th>Crop</th>
+            <th>Detected Pest</th>
+            <th>Confidence</th>
+            <th>Affected Area %</th>
+            <th>Severity</th>
+            <th>Hash Bucket</th>
+            <th>Rank #1 Recommended Treatment</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in scans %}
+            <tr>
+              <td><code>SCAN-{{ s.id }}</code></td>
+              <td>{{ s.created_at }}</td>
+              <td>
+                <img src="{{ url_for('static', filename='uploads/' ~ s.annotated_filename) }}"
+                     alt="Scan {{ s.id }}" class="thumb-img" />
+              </td>
+              <td><strong>{{ s.crop }}</strong></td>
+              <td>
+                {{ s.detected_pest }}
+                <div class="text-muted small-text"><em>{{ s.scientific_name }}</em></div>
+              </td>
+              <td>{{ s.fused_confidence_percent }}%</td>
+              <td>{{ s.affected_area_percent }}%</td>
+              <td><span class="severity-{{ s.severity | lower }}">{{ s.severity }}</span></td>
+              <td><code>Bucket #{{ s.hash_bucket_index }}</code></td>
+              <td>
+                {% if s.ranked_treatments %}
+                  <strong>{{ s.ranked_treatments[0].name }}</strong>
+                  <div class="text-muted small-text">
+                    Score: {{ s.ranked_treatments[0].priority_score }} • ₹{{ s.ranked_treatments[0].cost_per_acre_inr }}/acre
+                  </div>
+                {% else %}
+                  <span class="text-muted">Uncertain / Retake Photo</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-muted mt-1">
+      No leaf scans recorded yet. Visit the <a href="{{ url_for('scanner_page') }}">Leaf Scanner</a> page to upload a crop leaf photograph.
+    </p>
+  {% endif %}
+</section>
+{% endblock %}
