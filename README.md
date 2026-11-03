@@ -117,3 +117,4 @@ Use `Ctrl+F` (or `Ctrl+Shift+F` across all files) to jump directly to any concep
 - `# [ADMIN]` — Administrator Role Checks and Complaint Response Management
 - `# [FEEDBACK]` — User Complaint Submission, Status Tracking, and Admin Replies
 - `# [CONFIG]` / `# [THRESHOLD]` / `# [SEVERITY]` / `# [TREATMENT]` / `# [CHANGE_HERE]` — Tunable Parameters
+- - `# [CONFIG]` / `# [THRESHOLD]` / `# [SEVERITY]` / `# [TREATMENT]` / `# [CHANGE_HERE]` — Tunable Parameters
